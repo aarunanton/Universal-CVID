@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Builder - Universal CV ID</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f7fafc;
+            color: #1a202c;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .form-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+
+        .form-section h2 {
+            margin-bottom: 1.5rem;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .add-btn {
+            background: #48bb78;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .remove-btn {
+            background: #f56565;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .preview-section {
+            position: sticky;
+            top: 90px;
+            height: fit-content;
+        }
+
+        .preview-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform-origin: top;
+        }
+
+        .cv-preview {
+            background: white;
+            padding: 2rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .cv-header {
+            text-align: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: 1.5rem;
+        }
+
+        .cv-name {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1a202c;
+            margin-bottom: 0.5rem;
+        }
+
+        .cv-title {
+            font-size: 1.125rem;
+            color: #667eea;
+            margin-bottom: 0.75rem;
+        }
+
+        .cv-contact {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.875rem;
+            color: #4a5568;
+        }
+
+        .cv-id-display {
+            text-align: center;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 6px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .cv-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .cv-section-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .cv-item {
+            margin-bottom: 1rem;
+        }
+
+        .cv-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+        }
+
+        .cv-item-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .cv-item-date {
+            font-size: 0.875rem;
+            color: #718096;
+        }
+
+        .cv-item-subtitle {
+            color: #4a5568;
+            font-size: 0.9375rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .cv-item-description {
+            color: #4a5568;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .skill-tag {
+            background: #edf2f7;
+            color: #2d3748;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .item-container {
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .item-container .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .preview-section {
+                position: relative;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🆔</div>
+                Universal CV ID
+            </a>
+            <div class="nav-actions">
+                <button class="btn" onclick="saveCVToStorage()">💾 Save</button>
+                <button class="btn" onclick="downloadPDF()">📥 Download PDF</button>
+                <a href="dashboard.html" class="btn btn-secondary">📊 Dashboard</a>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Form Section -->
+        <div class="form-section">
+            <h2>📝 Build Your CV</h2>
+
+            <!-- Personal Info -->
+            <div class="form-group">
+                <label>Full Name *</label>
+                <input type="text" id="fullName" placeholder="John Doe" oninput="updatePreview()">
+            </div>
+
+            <div class="form-group">
+                <label>Professional Title *</label>
+                <input type="text" id="jobTitle" placeholder="Senior Software Engineer" oninput="updatePreview()">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="email" placeholder="john@example.com" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" id="phone" placeholder="+1 234 567 8900" oninput="updatePreview()">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" id="location" placeholder="San Francisco, CA" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>LinkedIn</label>
+                    <input type="url" id="linkedin" placeholder="linkedin.com/in/johndoe" oninput="updatePreview()">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Professional Summary</label>
+                <textarea id="summary" placeholder="Brief overview of your professional background..." oninput="updatePreview()"></textarea>
+            </div>
+
+            <!-- Experience -->
+            <h2>💼 Work Experience</h2>
+            <div id="experienceContainer"></div>
+            <button class="add-btn" onclick="addExperience()">+ Add Experience</button>
+
+            <!-- Education -->
+            <h2 style="margin-top: 2rem;">🎓 Education</h2>
+            <div id="educationContainer"></div>
+            <button class="add-btn" onclick="addEducation()">+ Add Education</button>
+
+            <!-- Skills -->
+            <h2 style="margin-top: 2rem;">🛠️ Skills</h2>
+            <div class="form-group">
+                <label>Add Skills (press Enter after each)</label>
+                <input type="text" id="skillInput" placeholder="e.g., JavaScript, React, Node.js" onkeypress="addSkill(event)">
+                <div id="skillsDisplay" style="margin-top: 1rem;"></div>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="preview-section">
+            <div class="preview-container">
+                <div class="cv-preview" id="cvPreview">
+                    <div class="cv-header">
+                        <div class="cv-name" id="previewName">Your Name</div>
+                        <div class="cv-title" id="previewTitle">Your Title</div>
+                        <div class="cv-contact" id="previewContact">
+                            <span>📧 email@example.com</span>
+                            <span>📱 +1 234 567 8900</span>
+                            <span>📍 Location</span>
+                        </div>
+                        <div class="cv-id-display" id="universalId">#UCVID-XXXXX</div>
+                    </div>
+
+                    <div class="cv-section" id="summarySection" style="display: none;">
+                        <div class="cv-section-title">Professional Summary</div>
+                        <div id="previewSummary"></div>
+                    </div>
+
+                    <div class="cv-section" id="experienceSection" style="display: none;">
+                        <div class="cv-section-title">Experience</div>
+                        <div id="previewExperience"></div>
+                    </div>
+
+                    <div class="cv-section" id="educationSection" style="display: none;">
+                        <div class="cv-section-title">Education</div>
+                        <div id="previewEducation"></div>
+                    </div>
+
+                    <div class="cv-section" id="skillsSection" style="display: none;">
+                        <div class="cv-section-title">Skills</div>
+                        <div class="skills-list" id="previewSkills"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let experiences = [];
+        let educations = [];
+        let skills = [];
+        let universalId = generateUniversalId();
+
+        // Initialize
+        document.getElementById('universalId').textContent = universalId;
+        addExperience();
+        addEducation();
+
+        function generateUniversalId() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let id = '#UCVID-';
+            for (let i = 0; i < 5; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+
+        function addExperience() {
+            const index = experiences.length;
+            experiences.push({});
+            
+            const container = document.getElementById('experienceContainer');
+            const div = document.createElement('div');
+            div.className = 'item-container';
+            div.innerHTML = `
+                <button class="remove-btn" onclick="removeExperience(${index})">Remove</button>
+                <div class="form-group">
+                    <label>Job Title</label>
+                    <input type="text" id="expTitle${index}" oninput="updatePreview()" placeholder="Software Engineer">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Company</label>
+                        <input type="text" id="expCompany${index}" oninput="updatePreview()" placeholder="Tech Corp">
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="expLocation${index}" oninput="updatePreview()" placeholder="San Francisco, CA">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="month" id="expStart${index}" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="month" id="expEnd${index}" oninput="updatePreview()" placeholder="Present">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="expDesc${index}" oninput="updatePreview()" placeholder="• Achieved this&#10;• Led that&#10;• Improved something"></textarea>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeExperience(index) {
+            experiences[index] = null;
+            updatePreview();
+            event.target.parentElement.remove();
+        }
+
+        function addEducation() {
+            const index = educations.length;
+            educations.push({});
+            
+            const container = document.getElementById('educationContainer');
+            const div = document.createElement('div');
+            div.className = 'item-container';
+            div.innerHTML = `
+                <button class="remove-btn" onclick="removeEducation(${index})">Remove</button>
+                <div class="form-group">
+                    <label>Degree</label>
+                    <input type="text" id="eduDegree${index}" oninput="updatePreview()" placeholder="Bachelor of Science in Computer Science">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Institution</label>
+                        <input type="text" id="eduSchool${index}" oninput="updatePreview()" placeholder="University Name">
+                    </div>
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="number" id="eduYear${index}" oninput="updatePreview()" placeholder="2020">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Details</label>
+                    <textarea id="eduDetails${index}" oninput="updatePreview()" placeholder="GPA, honors, relevant coursework..."></textarea>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeEducation(index) {
+            educations[index] = null;
+            updatePreview();
+            event.target.parentElement.remove();
+        }
+
+        function addSkill(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const input = document.getElementById('skillInput');
+                const skill = input.value.trim();
+                if (skill) {
+                    skills.push(skill);
+                    input.value = '';
+                    updateSkillsDisplay();
+                    updatePreview();
+                }
+            }
+        }
+
+        function removeSkill(index) {
+            skills.splice(index, 1);
+            updateSkillsDisplay();
+            updatePreview();
+        }
+
+        function updateSkillsDisplay() {
+            const display = document.getElementById('skillsDisplay');
+            display.innerHTML = skills.map((skill, index) => 
+                `<span class="skill-tag">${skill} <button onclick="removeSkill(${index})" style="background: none; border: none; color: #f56565; cursor: pointer; font-weight: bold;">×</button></span>`
+            ).join('');
+        }
+
+        function updatePreview() {
+            // Personal Info
+            const name = document.getElementById('fullName').value || 'Your Name';
+            const title = document.getElementById('jobTitle').value || 'Your Title';
+            const email = document.getElementById('email').value || 'email@example.com';
+            const phone = document.getElementById('phone').value || '+1 234 567 8900';
+            const location = document.getElementById('location').value || 'Location';
+            const summary = document.getElementById('summary').value;
+
+            document.getElementById('previewName').textContent = name;
+            document.getElementById('previewTitle').textContent = title;
+            
+            let contactHTML = `<span>📧 ${email}</span>`;
+            if (phone) contactHTML += `<span>📱 ${phone}</span>`;
+            if (location) contactHTML += `<span>📍 ${location}</span>`;
+            document.getElementById('previewContact').innerHTML = contactHTML;
+
+            // Summary
+            const summarySection = document.getElementById('summarySection');
+            if (summary) {
+                summarySection.style.display = 'block';
+                document.getElementById('previewSummary').textContent = summary;
+            } else {
+                summarySection.style.display = 'none';
+            }
+
+            // Experience
+            let expHTML = '';
+            experiences.forEach((exp, index) => {
+                if (exp !== null) {
+                    const expTitle = document.getElementById(`expTitle${index}`)?.value;
+                    const expCompany = document.getElementById(`expCompany${index}`)?.value;
+                    const expLocation = document.getElementById(`expLocation${index}`)?.value;
+                    const expStart = document.getElementById(`expStart${index}`)?.value;
+                    const expEnd = document.getElementById(`expEnd${index}`)?.value || 'Present';
+                    const expDesc = document.getElementById(`expDesc${index}`)?.value;
+
+                    if (expTitle || expCompany) {
+                        expHTML += `
+                            <div class="cv-item">
+                                <div class="cv-item-header">
+                                    <div class="cv-item-title">${expTitle || 'Job Title'}</div>
+                                    <div class="cv-item-date">${expStart ? new Date(expStart).toLocaleDateString('en-US', {month: 'short', year: 'numeric'}) : ''} - ${expEnd === 'Present' ? 'Present' : expEnd ? new Date(expEnd).toLocaleDateString('en-US', {month: 'short', year: 'numeric'}) : ''}</div>
+                                </div>
+                                <div class="cv-item-subtitle">${expCompany || 'Company'}${expLocation ? ' • ' + expLocation : ''}</div>
+                                ${expDesc ? `<div class="cv-item-description">${expDesc}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                }
+            });
+            
+            const experienceSection = document.getElementById('experienceSection');
+            if (expHTML) {
+                experienceSection.style.display = 'block';
+                document.getElementById('previewExperience').innerHTML = expHTML;
+            } else {
+                experienceSection.style.display = 'none';
+            }
+
+            // Education
+            let eduHTML = '';
+            educations.forEach((edu, index) => {
+                if (edu !== null) {
+                    const eduDegree = document.getElementById(`eduDegree${index}`)?.value;
+                    const eduSchool = document.getElementById(`eduSchool${index}`)?.value;
+                    const eduYear = document.getElementById(`eduYear${index}`)?.value;
+                    const eduDetails = document.getElementById(`eduDetails${index}`)?.value;
+
+                    if (eduDegree || eduSchool) {
+                        eduHTML += `
+                            <div class="cv-item">
+                                <div class="cv-item-header">
+                                    <div class="cv-item-title">${eduDegree || 'Degree'}</div>
+                                    <div class="cv-item-date">${eduYear || ''}</div>
+                                </div>
+                                <div class="cv-item-subtitle">${eduSchool || 'Institution'}</div>
+                                ${eduDetails ? `<div class="cv-item-description">${eduDetails}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                }
+            });
+            
+            const educationSection = document.getElementById('educationSection');
+            if (eduHTML) {
+                educationSection.style.display = 'block';
+                document.getElementById('previewEducation').innerHTML = eduHTML;
+            } else {
+                educationSection.style.display = 'none';
+            }
+
+            // Skills
+            const skillsSection = document.getElementById('skillsSection');
+            if (skills.length > 0) {
+                skillsSection.style.display = 'block';
+                document.getElementById('previewSkills').innerHTML = skills.map(skill => 
+                    `<span class="skill-tag">${skill}</span>`
+                ).join('');
+            } else {
+                skillsSection.style.display = 'none';
+            }
+        }
+
+        function saveCVToStorage() {
+            const cvData = {
+                id: universalId,
+                personalInfo: {
+                    name: document.getElementById('fullName').value,
+                    title: document.getElementById('jobTitle').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    location: document.getElementById('location').value,
+                    linkedin: document.getElementById('linkedin').value,
+                    summary: document.getElementById('summary').value
+                },
+                experiences: experiences.filter(exp => exp !== null),
+                educations: educations.filter(edu => edu !== null),
+                skills: skills,
+                createdAt: new Date().toISOString()
+            };
+
+            // Get existing CVs
+            let savedCVs = JSON.parse(localStorage.getItem('universalCVs') || '[]');
+            
+            // Check if CV already exists
+            const existingIndex = savedCVs.findIndex(cv => cv.id === universalId);
+            if (existingIndex >= 0) {
+                savedCVs[existingIndex] = cvData;
+            } else {
+                savedCVs.push(cvData);
+            }
+            
+            localStorage.setItem('universalCVs', JSON.stringify(savedCVs));
+            
+            showMessage('✅ CV saved successfully!');
+        }
+
+        function downloadPDF() {
+            showMessage('📥 Generating PDF...');
+            
+            const element = document.getElementById('cvPreview');
+            const opt = {
+                margin: 10,
+                filename: `CV_${universalId.replace('#', '')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Generate PDF
+            html2canvas(element).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                const imgWidth = 210;
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                pdf.save(`CV_${universalId.replace('#', '')}.pdf`);
+                
+                showMessage('✅ PDF downloaded!');
+            });
+        }
+
+        function showMessage(message) {
+            const msg = document.createElement('div');
+            msg.className = 'success-message';
+            msg.textContent = message;
+            document.body.appendChild(msg);
+            
+            setTimeout(() => {
+                msg.remove();
+            }, 3000);
+        }
+
+        // Initialize preview
+        updatePreview();
+    </script>
+</body>
+</html>
