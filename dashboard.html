@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Universal CV ID</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f7fafc;
+            color: #1a202c;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: #1a202c;
+        }
+
+        .dashboard-header p {
+            color: #4a5568;
+            font-size: 1.125rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-card h3 {
+            font-size: 0.875rem;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-card .stat-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1a202c;
+        }
+
+        .stat-card .stat-change {
+            font-size: 0.875rem;
+            color: #48bb78;
+            margin-top: 0.5rem;
+        }
+
+        .section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            color: #1a202c;
+        }
+
+        .cv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .cv-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cv-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .cv-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .cv-id-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            font-family: monospace;
+        }
+
+        .cv-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .cv-status.active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .cv-card-body h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+            color: #1a202c;
+        }
+
+        .cv-card-body p {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+
+        .cv-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #718096;
+            margin-bottom: 1rem;
+        }
+
+        .cv-actions {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #5568d3;
+        }
+
+        .btn-edit {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #38a169;
+        }
+
+        .btn-delete {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #e53e3e;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #1a202c;
+        }
+
+        .empty-state p {
+            color: #4a5568;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: #1a202c;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #718096;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #1a202c;
+        }
+
+        .cv-preview {
+            background: #f7fafc;
+            padding: 2rem;
+            border-radius: 8px;
+        }
+
+        .cv-preview-header {
+            text-align: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            margin-bottom: 1.5rem;
+        }
+
+        .cv-preview-name {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .cv-preview-title {
+            font-size: 1.25rem;
+            color: #667eea;
+            margin-bottom: 0.75rem;
+        }
+
+        .cv-preview-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .cv-preview-section h3 {
+            font-size: 1.125rem;
+            color: #667eea;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .cv-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="index.html" class="logo">
+                <div class="logo-icon">🆔</div>
+                Universal CV ID
+            </a>
+            <a href="cv-builder.html" class="btn">+ Create New CV</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>📊 Your Dashboard</h1>
+            <p>Manage your Universal CV IDs and track your professional presence</p>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <h3>Total CVs</h3>
+                <div class="stat-number" id="totalCVs">0</div>
+                <div class="stat-change">↗ Active profiles</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>Total Views</h3>
+                <div class="stat-number" id="totalViews">0</div>
+                <div class="stat-change">↗ Simulated data</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>Profile Strength</h3>
+                <div class="stat-number" id="profileStrength">0%</div>
+                <div class="stat-change">Keep improving!</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>Last Updated</h3>
+                <div class="stat-number" style="font-size: 1.5rem;" id="lastUpdated">-</div>
+                <div class="stat-change">Recent activity</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2>Your CV Collection</h2>
+                <button class="btn" onclick="window.location.href='cv-builder.html'">+ Create New</button>
+            </div>
+
+            <div id="cvContainer"></div>
+        </div>
+    </div>
+
+    <!-- View CV Modal -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>CV Preview</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentCVs = [];
+
+        // Load dashboard on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDashboard();
+        });
+
+        function loadDashboard() {
+            const savedCVs = JSON.parse(localStorage.getItem('universalCVs') || '[]');
+            currentCVs = savedCVs;
+
+            // Update stats
+            document.getElementById('totalCVs').textContent = savedCVs.length;
+            
+            // Calculate simulated views (random for demo)
+            const totalViews = savedCVs.reduce((sum, cv) => sum + Math.floor(Math.random() * 500 + 100), 0);
+            document.getElementById('totalViews').textContent = totalViews;
+
+            // Calculate profile strength
+            let totalStrength = 0;
+            savedCVs.forEach(cv => {
+                let strength = 0;
+                if (cv.personalInfo.name) strength += 20;
+                if (cv.personalInfo.email) strength += 20;
+                if (cv.personalInfo.summary) strength += 20;
+                if (cv.experiences && cv.experiences.length > 0) strength += 20;
+                if (cv.skills && cv.skills.length > 0) strength += 20;
+                totalStrength += strength;
+            });
+            const avgStrength = savedCVs.length > 0 ? Math.round(totalStrength / savedCVs.length) : 0;
+            document.getElementById('profileStrength').textContent = avgStrength + '%';
+
+            // Last updated
+            if (savedCVs.length > 0) {
+                const lastCV = savedCVs[savedCVs.length - 1];
+                const date = new Date(lastCV.createdAt);
+                document.getElementById('lastUpdated').textContent = date.toLocaleDateString();
+            }
+
+            // Display CVs
+            displayCVs(savedCVs);
+        }
+
+        function displayCVs(cvs) {
+            const container = document.getElementById('cvContainer');
+
+            if (cvs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h3>No CVs Yet</h3>
+                        <p>Create your first Universal CV ID to get started!</p>
+                        <a href="cv-builder.html" class="btn">Create Your First CV</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const cvGrid = document.createElement('div');
+            cvGrid.className = 'cv-grid';
+
+            cvs.forEach((cv, index) => {
+                const card = document.createElement('div');
+                card.className = 'cv-card';
+                
+                const views = Math.floor(Math.random() * 500 + 100);
+                const saves = Math.floor(Math.random() * 50 + 10);
+                
+                card.innerHTML = `
+                    <div class="cv-card-header">
+                        <div class="cv-id-badge">${cv.id}</div>
+                        <div class="cv-status active">Active</div>
+                    </div>
+                    <div class="cv-card-body">
+                        <h3>${cv.personalInfo.name || 'Unnamed CV'}</h3>
+                        <p>${cv.personalInfo.title || 'No title specified'}</p>
+                        <div class="cv-meta">
+                            <span>👁 ${views} views</span>
+                            <span>💾 ${saves} saves</span>
+                        </div>
+                    </div>
+                    <div class="cv-actions">
+                        <button class="btn-small btn-view" onclick="viewCV(${index})">View</button>
+                        <button class="btn-small btn-edit" onclick="editCV(${index})">Edit</button>
+                        <button class="btn-small btn-delete" onclick="deleteCV(${index})">Delete</button>
+                    </div>
+                `;
+                
+                cvGrid.appendChild(card);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(cvGrid);
+        }
+
+        function viewCV(index) {
+            const cv = currentCVs[index];
+            const modalBody = document.getElementById('modalBody');
+            
+            let html = `
+                <div class="cv-preview">
+                    <div class="cv-preview-header">
+                        <div class="cv-preview-name">${cv.personalInfo.name}</div>
+                        <div class="cv-preview-title">${cv.personalInfo.title}</div>
+                        <div style="margin-top: 0.5rem;">
+                            📧 ${cv.personalInfo.email} | 📱 ${cv.personalInfo.phone || 'N/A'} | 📍 ${cv.personalInfo.location || 'N/A'}
+                        </div>
+                        <div style="margin-top: 0.75rem; padding: 0.5rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 6px; font-weight: 700; font-family: monospace;">
+                            ${cv.id}
+                        </div>
+                    </div>
+            `;
+
+            if (cv.personalInfo.summary) {
+                html += `
+                    <div class="cv-preview-section">
+                        <h3>Professional Summary</h3>
+                        <p>${cv.personalInfo.summary}</p>
+                    </div>
+                `;
+            }
+
+            if (cv.experiences && cv.experiences.length > 0) {
+                html += `<div class="cv-preview-section"><h3>Experience</h3>`;
+                cv.experiences.forEach(exp => {
+                    html += `
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-weight: 600;">${exp.title || 'Job Title'}</div>
+                            <div style="color: #4a5568;">${exp.company || 'Company'} • ${exp.location || ''}</div>
+                            <div style="font-size: 0.875rem; color: #718096; margin-top: 0.25rem;">${exp.startDate || ''} - ${exp.endDate || 'Present'}</div>
+                            ${exp.description ? `<div style="margin-top: 0.5rem; white-space: pre-line;">${exp.description}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if (cv.educations && cv.educations.length > 0) {
+                html += `<div class="cv-preview-section"><h3>Education</h3>`;
+                cv.educations.forEach(edu => {
+                    html += `
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-weight: 600;">${edu.degree || 'Degree'}</div>
+                            <div style="color: #4a5568;">${edu.school || 'Institution'}</div>
+                            <div style="font-size: 0.875rem; color: #718096;">${edu.year || ''}</div>
+                            ${edu.details ? `<div style="margin-top: 0.5rem;">${edu.details}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if (cv.skills && cv.skills.length > 0) {
+                html += `
+                    <div class="cv-preview-section">
+                        <h3>Skills</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                            ${cv.skills.map(skill => `<span style="background: #e2e8f0; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.875rem;">${skill}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            
+            modalBody.innerHTML = html;
+            document.getElementById('viewModal').classList.add('active');
+        }
+
+        function editCV(index) {
+            // For now, just redirect to builder
+            // In a real app, you'd load the CV data into the builder
+            showMessage('📝 Editing feature coming soon! For now, you can create a new CV.');
+        }
+
+        function deleteCV(index) {
+            if (confirm('Are you sure you want to delete this CV? This action cannot be undone.')) {
+                currentCVs.splice(index, 1);
+                localStorage.setItem('universalCVs', JSON.stringify(currentCVs));
+                showMessage('🗑️ CV deleted successfully!');
+                loadDashboard();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('viewModal').classList.remove('active');
+        }
+
+        function showMessage(message) {
+            const msg = document.createElement('div');
+            msg.className = 'success-message';
+            msg.textContent = message;
+            document.body.appendChild(msg);
+            
+            setTimeout(() => {
+                msg.remove();
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('viewModal').addEventListener('click', (e) => {
+            if (e.target.id === 'viewModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
