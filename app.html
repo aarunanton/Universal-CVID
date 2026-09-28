@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Universal CV ID Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<link rel="stylesheet" href="assets/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <header class="app-bar">
+    <div class="app-bar-inner">
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID</a>
+      <button class="id-chip" id="idChip" data-action="copy-id" title="Copy your ID">#UCVID-·····</button>
+      <span class="spacer"></span>
+      <div class="version-picker">
+        <label for="versionSelect" class="eyebrow">Version</label>
+        <select id="versionSelect"></select>
+        <button class="btn btn-sm" data-action="new-version" title="Copy this version into a new one">+ New</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" data-action="theme" aria-label="Switch light or dark mode">◐</button>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+  </header>
+
+  <div class="workspace">
+    <div class="panel-col">
+      <div class="banner" id="sampleBanner" hidden>
+        <span>You're looking at an example CV. Everything saves in this browser only.</span>
+        <button class="btn btn-sm" data-action="keep-example">Edit the example</button>
+        <button class="btn btn-sm btn-primary" data-action="start-own" style="margin-left:0">Start my own</button>
+      </div>
+      <main id="panel" class="panel-col" role="tabpanel"></main>
+    </div>
+
+    <aside class="preview-col" aria-label="Live preview">
+      <div class="preview-bar">
+        <span class="eyebrow">Live preview · A4</span>
+        <button class="btn btn-sm" data-tab="design">Change design</button>
+        <button class="btn btn-sm btn-primary" data-action="pdf">Download PDF</button>
+      </div>
+      <div class="paper-wrap" id="paperWrap"><div class="paper-scale" id="paper"></div></div>
+    </aside>
+  </div>
+
+  <div class="toast-wrap" id="toasts" aria-live="polite"></div>
+
+  <script src="assets/cv.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
