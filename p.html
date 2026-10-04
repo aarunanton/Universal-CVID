@@ -7,10 +7,9 @@
 <meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&display=swap">
 <link rel="stylesheet" href="assets/styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <div class="public-wrap">
@@ -61,19 +60,27 @@
         return;
       }
 
-      const version = { cv: Object.assign(UCV.blankCV(), data.cv), template: data.tpl || 'meridian', accent: data.ac, order: data.ord || UCV.DEFAULT_ORDER, name: 'CV' };
-      version.cv.basics = Object.assign(UCV.blankCV().basics, version.cv.basics);
-      out.innerHTML = `<div class="paper-wrap" id="paperWrap"><div class="paper-scale" id="paper">${UCV.renderCV(version, data.id)}</div></div>`;
+      const res = UCV.fromShare(data);
+      out.innerHTML = '<div class="paper-wrap" id="paperWrap"><div class="paper-scale" id="paper"></div></div>';
+      const paper = document.getElementById('paper'), wrap = document.getElementById('paperWrap');
       actions.innerHTML = '<button class="btn btn-primary btn-sm" id="dl">Download PDF</button>';
-      document.getElementById('dl').addEventListener('click', () => { if (window.jspdf) UCV.pdf({ id: data.id }, version); });
-
-      const fit = () => {
-        const wrap = document.getElementById('paperWrap'), paper = document.getElementById('paper');
+      document.getElementById('dl').addEventListener('click', () => {
+        let root = document.getElementById('printRoot');
+        if (!root) { root = document.createElement('div'); root.id = 'printRoot'; document.body.appendChild(root); }
+        root.innerHTML = paper.innerHTML;
+        document.body.classList.add('printing');
+        const done = () => { document.body.classList.remove('printing'); root.innerHTML = ''; removeEventListener('afterprint', done); };
+        addEventListener('afterprint', done);
+        print();
+      });
+      const draw = () => {
+        UCV.paginate(paper, res, data.id);
         const s = Math.min(1, (wrap.clientWidth - 36) / 794);
-        paper.style.transform = `scale(${s})`; paper.style.width = 794 * s + 'px';
-        paper.style.height = paper.firstElementChild.offsetHeight * s + 'px';
+        paper.style.transform = `scale(${s})`; paper.style.width = '794px';
+        paper.style.marginBottom = (paper.offsetHeight * (s - 1)) + 'px';
+        paper.style.marginRight = (794 * (s - 1)) + 'px';
       };
-      fit(); addEventListener('resize', fit); document.fonts?.ready.then(fit);
+      draw(); addEventListener('resize', draw); document.fonts?.ready.then(draw);
     })();
   </script>
 </body>

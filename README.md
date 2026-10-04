@@ -2,9 +2,9 @@
 
 **One ID. Every version of your career.**
 
-Build your CV once and get a permanent Universal CV ID (for example `#UCVID-K7Q4M`). Make tailored versions for each job, check them against the job advert, share them by link or QR code, and track where you applied. Everything runs in the browser: no account, no server, no tracking.
+Import your CV or build it here, and get a permanent Universal CV ID (for example `#UCVID-K7Q4M`). Keep one master CV, tick what each job needs, check it against the advert, and send a matching PDF, Word file, link or QR code. Everything runs in the browser: no account, no server, no tracking.
 
-**Live site:** https://aarunanton.github.io/Universal-CVID/ (once GitHub Pages is enabled: Settings → Pages → branch `main`, folder `/`)
+**Live site:** https://aarunanton.github.io/Universal-CVID/
 
 ---
 
@@ -12,36 +12,38 @@ Build your CV once and get a permanent Universal CV ID (for example `#UCVID-K7Q4
 
 | Feature | What it does |
 |---|---|
-| **One ID, many versions** | A main CV plus tailored copies for specific jobs. Every version carries the same ID. |
-| **Job match** | Paste a job advert to get a keyword match score, see what's missing, and add missing terms in one click. Then save the result as a new tailored version. |
-| **CV check** | Live feedback: weak openers ("responsible for"), bullets without numbers, over-long bullets, missing contact details. |
-| **Templates** | Four templates (Meridian, Ledger, Slate, Plain ATS), six accent colours, drag-and-drop section order. |
-| **Share by link** | The full CV is compressed into the link itself, so it works without a server. |
-| **QR contact card** | A short contact-card link and QR code for business cards and badges. |
-| **Text PDF export** | PDFs use real text, so applicant tracking systems can read them. You can also print any template from the browser. |
-| **JSON Resume** | Import and export in the open [JSON Resume](https://jsonresume.org) format. |
-| **Application tracker** | Saved → Applied → Interview → Offer / Rejected, linked to the CV version you sent. |
-| **Light and dark mode** | Follows the system setting, with a manual toggle. |
-| **Private** | All data lives in the browser's local storage. |
+| **Import** | Upload a PDF, Word (.docx), text or JSON Resume file, or paste text. Sections, roles, dates, bullets and skills are filled in for you to check. |
+| **Master CV with tick-boxes** | Everything you've done lives in one master CV. Each version ticks the roles, bullets and skills it shows; unticked items stay stored. |
+| **Versions** | Each version has its own title, profile, selection, design, target job and cover letter. All share one Universal CV ID. |
+| **Score** | Pass/fail checks across Content, Format, Best practices and Job match: 3–6 bullets per role, numbers in bullets, weak openers, pronouns, buzzwords, passive voice, word count, page length and more. |
+| **Job match** | Paste a job advert to get a keyword match score, see what's missing, add terms in one click, and save a tailored version. |
+| **Design** | Six templates (Meridian, Classic, Slate, Ledger, Compact, Plain ATS), five fonts, font size, line spacing, margins, section spacing, date format, accent colour, optional photo, section order and visibility. |
+| **Real A4 pages** | Long CVs flow across pages with page numbers; roles split cleanly between pages. |
+| **Exports** | PDF that matches the preview exactly (real text), Word (.docx), plain-text PDF and JSON Resume. |
+| **Cover letters** | One per version, drafted from the CV and the job advert, in the same design. PDF and Word. |
+| **Share** | A link with the CV compressed into it (no server), plus a short contact-card link with a QR code. |
+| **Application tracker** | Saved → Applied → Interview → Offer / Rejected, linked to the CV version sent. |
+| **Editing** | Drag to reorder bullets and sections, Enter for a new bullet, paste many lines as many bullets, `**bold**`, `*italic*` and `[links](https://…)`, custom sections. |
+| **Private** | All data lives in the browser's local storage. Light and dark mode. |
 
-CVs saved by the first prototype (the `universalCVs` storage key) are imported automatically the first time the new builder opens.
+Data saved by earlier versions of the builder is upgraded automatically.
 
 ## Files
 
 ```
 Universal-CVID/
 ├── index.html        Landing page
-├── app.html          The builder (edit, design, job match, versions, share, tracker)
+├── app.html          The builder
 ├── p.html            Public profile page that opens shared links and QR codes
 ├── assets/
-│   ├── cv.js         Data model, storage, templates, CV checks, job match, sharing, PDF
+│   ├── cv.js         Engine: data model, A4 pagination, score, job match, import parser, sharing, exports
 │   ├── app.js        Builder interface
-│   └── styles.css    Design tokens (light and dark) and all styles
+│   └── styles.css    Design tokens (light and dark), builder and CV template styles
 ├── cv-builder.html   Redirect to app.html (keeps old links working)
 └── dashboard.html    Redirect to app.html#versions
 ```
 
-Plain HTML, CSS and JavaScript with no build step. Libraries load from cdnjs: [lz-string](https://github.com/pieroxy/lz-string) (link compression), [qrcodejs](https://github.com/davidshimjs/qrcodejs) (QR codes) and [jsPDF](https://github.com/parallax/jsPDF) (PDF export).
+Plain HTML, CSS and JavaScript with no build step. Libraries load from public CDNs, most only when needed: [lz-string](https://github.com/pieroxy/lz-string) (link compression), [qrcodejs](https://github.com/davidshimjs/qrcodejs) (QR codes), [jsPDF](https://github.com/parallax/jsPDF) (plain-text PDF), [PDF.js](https://mozilla.github.io/pdf.js/) (PDF import), [mammoth](https://github.com/mwilliamson/mammoth.js) (Word import) and [docx](https://github.com/dolanmiu/docx) (Word export).
 
 ## Run locally
 
@@ -52,16 +54,17 @@ python -m http.server 8000
 
 ## Known limits
 
-- Data is stored per browser. Use JSON export, or a share link, to move a CV between devices.
-- Share links are long because the CV travels inside them. The QR code uses the shorter contact-card link.
-- Job match is keyword-based and runs on your device. It does not use AI.
+- Data is stored per browser. Use an export or a share link to move a CV between devices.
+- Import is a best guess. Two-column CVs and scanned (image-only) PDFs import poorly; paste the text instead.
+- "Download PDF" uses the browser's print window (choose "Save as PDF").
+- Job match and the cover-letter draft are rule-based and run on your device. They do not use AI.
 
 ## Roadmap
 
 - Accounts and cloud sync, so an ID resolves to your latest CV from any device
 - Short links (`/id/K7Q4M`) backed by a small API
-- AI rewriting of bullet points
-- Cover letters tied to each tailored version
+- Verified claims: professional registers, universities, employers
+- AI rewriting of bullet points and summaries
 - View analytics for shared links
 
 ## Licence
