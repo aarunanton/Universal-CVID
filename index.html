@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Universal CV ID</title>
 <meta name="description" content="One ID for your whole career. Build your CV, tailor it to each job, share it by link or QR code. Free, and your data stays in your browser.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="assets/styles.css">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<script src="assets/boot.js?v=4"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=4">
+<link rel="stylesheet" href="assets/styles.css?v=4">
 </head>
 <body>
   <nav class="site-nav" aria-label="Main">
@@ -89,10 +90,7 @@
     <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
   </footer>
 
-  <script src="assets/cv.js"></script>
-  <script>
-    const [a, b] = UCV.mrz('#UCVID-K7Q4M', 'Maya Okafor', 'Senior Product Designer');
-    document.getElementById('heroMrz').textContent = a + '\n' + b;
-  </script>
+  <script src="assets/cv.js?v=4"></script>
+  <script src="assets/home.js?v=4"></script>
 </body>
 </html>

@@ -38,12 +38,25 @@ Universal-CVID/
 ├── assets/
 │   ├── cv.js         Engine: data model, A4 pagination, score, job match, import parser, sharing, exports
 │   ├── app.js        Builder interface
-│   └── styles.css    Design tokens (light and dark), builder and CV template styles
+│   ├── p.js          Public profile page logic
+│   ├── boot.js       Content security policy, loaded first on every page
+│   ├── styles.css    Design tokens (light and dark), builder and CV template styles
+│   ├── fonts/        Self-hosted fonts
+│   └── vendor/       Self-hosted libraries
 ├── cv-builder.html   Redirect to app.html (keeps old links working)
 └── dashboard.html    Redirect to app.html#versions
 ```
 
-Plain HTML, CSS and JavaScript with no build step. Libraries load from public CDNs, most only when needed: [lz-string](https://github.com/pieroxy/lz-string) (link compression), [qrcodejs](https://github.com/davidshimjs/qrcodejs) (QR codes), [jsPDF](https://github.com/parallax/jsPDF) (plain-text PDF), [PDF.js](https://mozilla.github.io/pdf.js/) (PDF import), [mammoth](https://github.com/mwilliamson/mammoth.js) (Word import) and [docx](https://github.com/dolanmiu/docx) (Word export).
+Plain HTML, CSS and JavaScript with no build step. Every library and font ships inside this repository (`assets/vendor`, `assets/fonts`), so the site makes **no requests to any other server**: [lz-string](https://github.com/pieroxy/lz-string) (link compression), [qrcodejs](https://github.com/davidshimjs/qrcodejs) (QR codes), [jsPDF](https://github.com/parallax/jsPDF) (plain-text PDF), [PDF.js](https://mozilla.github.io/pdf.js/) (PDF import), [mammoth](https://github.com/mwilliamson/mammoth.js) (Word import) and [docx](https://github.com/dolanmiu/docx) (Word export).
+
+## Security and privacy
+
+- **No third parties.** No CDN, no Google Fonts, no analytics. A content security policy (`assets/boot.js`) blocks outside connections and injected scripts.
+- **Nothing from a link is trusted.** Shared links, imports and stored data are validated before display: design values are checked against known options, photos must be embedded images, and only `http(s)` links are made clickable.
+- **You choose what a link carries.** Email, phone and location can each be left out of shared links and the QR card. Phone is off by default. Photos are never included.
+- **Links can't be recalled.** A shared link contains the CV, so it can't be revoked once sent. The app says so before you copy it.
+- **IDs** are generated with the browser's cryptographic random source. They are not yet centrally registered, so uniqueness is not guaranteed until the planned backend.
+- **Self-declared.** Nothing on a CV or ID card is verified yet; shared pages say so.
 
 ## Run locally
 
@@ -54,7 +67,8 @@ python -m http.server 8000
 
 ## Known limits
 
-- Data is stored per browser. Use an export or a share link to move a CV between devices.
+- Data is stored per browser, unencrypted. Use an export or a share link to move a CV between devices.
+- On GitHub Pages, other projects under the same `github.io` account share browser storage with this one. A custom domain removes that.
 - Import is a best guess. Two-column CVs and scanned (image-only) PDFs import poorly; paste the text instead.
 - "Download PDF" uses the browser's print window (choose "Save as PDF").
 - Job match and the cover-letter draft are rule-based and run on your device. They do not use AI.
@@ -62,7 +76,8 @@ python -m http.server 8000
 ## Roadmap
 
 - Accounts and cloud sync, so an ID resolves to your latest CV from any device
-- Short links (`/id/K7Q4M`) backed by a small API
+- Server-issued, longer IDs with a uniqueness check; revocable share links using random tokens separate from the ID
+- LinkedIn data-export import; company and role picked out of a pasted job advert
 - Verified claims: professional registers, universities, employers
 - AI rewriting of bullet points and summaries
 - View analytics for shared links

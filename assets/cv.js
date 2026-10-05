@@ -46,7 +46,9 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
-  function uid(prefix) { return (prefix || '') + Math.random().toString(36).slice(2, 10); }
+  // cryptographically strong randomness for IDs
+  function randomBytes(n) { const a = new Uint8Array(n); (window.crypto || window.msCrypto).getRandomValues(a); return a; }
+  function uid(prefix) { return (prefix || '') + [...randomBytes(6)].map(b => (b % 36).toString(36)).join(''); }
   function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   // light formatting: **bold**, *italic*, [text](https://link)
   function fmt(text) {
@@ -85,7 +87,7 @@
   const ID_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   function newId() {
     let s = '';
-    for (let i = 0; i < 5; i++) s += ID_CHARS[Math.floor(Math.random() * ID_CHARS.length)];
+    randomBytes(5).forEach(b => { s += ID_CHARS[b & 31]; }); // 32 symbols, so the low 5 bits give an unbiased pick
     return '#UCVID-' + s;
   }
   function shortId(id) { return String(id || '').replace(/^#?UCVID-/, ''); }
@@ -111,6 +113,54 @@
       (code + checkDigit(code) + '<' + mrzName(label)).padEnd(36, '<').slice(0, 36)
     ];
   }
+
+  // ---------- validation: nothing from a share link, an import or storage is trusted ----------
+  const clampN = (v, lo, hi, def) => { v = Number(v); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def; };
+  const str = (v, max) => (typeof v === 'string' || typeof v === 'number') ? String(v).slice(0, max || 2000) : '';
+  const arr = v => Array.isArray(v) ? v.slice(0, 200) : [];
+  const obj = v => (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+  // a photo may only be an image embedded in the page, never an address on another server
+  const safePhoto = p => (typeof p === 'string' && p.length < 400000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p)) ? p : '';
+  // only ordinary web links are ever made clickable
+  function safeUrl(u) {
+    u = String(u || '').trim();
+    if (/^https?:\/\/[^\s<>"'`]+$/i.test(u)) return u;
+    if (/^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/[^\s<>"'`]*)?$/i.test(u)) return 'https://' + u;
+    return '';
+  }
+  function cleanDesign(d) {
+    d = obj(d); const D = DEFAULT_DESIGN;
+    return {
+      template: TEMPLATES.some(t => t.id === d.template) ? d.template : D.template,
+      accent: /^#[0-9a-fA-F]{6}$/.test(d.accent) ? d.accent : D.accent,
+      font: FONTS.some(f => f.id === d.font) ? d.font : D.font,
+      size: clampN(d.size, 8, 12, D.size), line: clampN(d.line, 1, 2, D.line),
+      margin: clampN(d.margin, 5, 30, D.margin), gap: clampN(d.gap, 0, 40, D.gap),
+      dateFmt: DATE_FORMATS.some(f => f.id === d.dateFmt) ? d.dateFmt : D.dateFmt,
+      photo: d.photo === true, showId: d.showId !== false
+    };
+  }
+  function cleanOrder(o) {
+    const seen = new Set();
+    const out = (Array.isArray(o) ? o : DEFAULT_ORDER).filter(k => typeof k === 'string' && (DEFAULT_ORDER.includes(k) || /^c:[A-Za-z0-9]{1,16}$/.test(k)) && !seen.has(k) && seen.add(k));
+    return out.length ? out : DEFAULT_ORDER.slice();
+  }
+  function cleanCV(c) {
+    c = obj(c); const b = obj(c.basics);
+    return {
+      basics: { name: str(b.name, 200), label: str(b.label, 200), email: str(b.email, 200), phone: str(b.phone, 60), location: str(b.location, 200), url: str(b.url, 300), summary: str(b.summary, 4000), photo: safePhoto(b.photo) },
+      work: arr(c.work).map(obj).map(w => ({ position: str(w.position, 200), company: str(w.company, 200), location: str(w.location, 200), startDate: str(w.startDate, 10), endDate: str(w.endDate, 10),
+        highlights: (Array.isArray(w.highlights) ? w.highlights : lines(str(w.highlights, 20000))).slice(0, 60).map(h => str(h, 1500)).filter(Boolean) })),
+      education: arr(c.education).map(obj).map(e => ({ degree: str(e.degree, 300), institution: str(e.institution, 300), year: str(e.year, 20), details: str(e.details, 2000) })),
+      skills: arr(c.skills).map(s => str(s, 120)).filter(Boolean),
+      projects: arr(c.projects).map(obj).map(p => ({ name: str(p.name, 300), description: str(p.description, 2000), url: str(p.url, 300) })),
+      certificates: arr(c.certificates).map(obj).map(x => ({ name: str(x.name, 300), issuer: str(x.issuer, 300), date: str(x.date, 20) })),
+      languages: arr(c.languages).map(obj).map(l => ({ language: str(l.language, 100), fluency: str(l.fluency, 100) })),
+      custom: arr(c.custom).map(obj).map(x => ({ key: /^c:[A-Za-z0-9]{1,16}$/.test(x.key) ? x.key : '', title: str(x.title, 120),
+        items: arr(x.items).map(obj).map(i => ({ title: str(i.title, 300), sub: str(i.sub, 300), date: str(i.date, 40), text: str(i.text, 6000) })) }))
+    };
+  }
+  const validId = id => typeof id === 'string' && /^#UCVID-[A-Z0-9]{5,12}$/.test(id);
 
   // ---------- data model ----------
   function blankMaster() {
@@ -167,6 +217,7 @@
     }
     return {
       schema: 3, id: newId(), createdAt: new Date().toISOString(), isSample: !!withSample, isNew: true,
+      share: { email: true, phone: false, location: true },
       master: withSample ? sampleMaster() : blankMaster(),
       versions: [v], active: v.vid,
       applications: withSample ? [
@@ -180,7 +231,7 @@
   function toMaster(cv) {
     const m = blankMaster();
     const b = cv.basics || {};
-    Object.assign(m.basics, { name: b.name || '', email: b.email || '', phone: b.phone || '', location: b.location || '', url: b.url || '', photo: b.photo || '' });
+    Object.assign(m.basics, { name: b.name || '', email: b.email || '', phone: b.phone || '', location: b.location || '', url: b.url || '', photo: safePhoto(b.photo) });
     m.work = (cv.work || []).map(w => ({ id: uid('i'), position: w.position || '', company: w.company || '', location: w.location || '', startDate: w.startDate || '', endDate: w.endDate || '',
       bullets: (Array.isArray(w.highlights) ? w.highlights : lines(w.highlights)).map(text => ({ id: uid('b'), text })) }));
     m.education = (cv.education || []).map(e => ({ id: uid('i'), degree: e.degree || '', institution: e.institution || '', year: String(e.year || ''), details: e.details || '' }));
@@ -262,13 +313,17 @@
     store.master = Object.assign(blankMaster(), store.master);
     store.master.basics = Object.assign(blankMaster().basics, store.master.basics);
     store.versions.forEach(v => {
-      v.design = Object.assign(clone(DEFAULT_DESIGN), v.design);
+      v.design = cleanDesign(v.design);
       v.target = Object.assign({ company: '', role: '', jd: '' }, v.target);
       v.letter = Object.assign({ recipient: '', body: '' }, v.letter);
       v.hidden = v.hidden || []; v.hiddenSections = v.hiddenSections || [];
       fixOrder(store, v);
     });
-    store.applications = store.applications || [];
+    store.master.basics.photo = safePhoto(store.master.basics.photo);
+    store.applications = arr(store.applications);
+    store.applications.forEach(a => { a.url = safeUrl(a.url); });
+    store.share = Object.assign({ email: true, phone: false, location: true }, obj(store.share)); // which contact details go into shared links
+    if (!validId(store.id)) store.id = newId();
     return store;
   }
   function sectionKeys(store) { return [...DEFAULT_ORDER, ...store.master.custom.map(c => 'c:' + c.id)]; }
@@ -339,7 +394,7 @@
         if (cv.skills.length) items = [{ head: `<ul class="cv-tags">${cv.skills.map(s => `<li>${esc(s)}</li>`).join('')}</ul>`, bullets: [] }];
       } else if (key === 'projects') {
         items = cv.projects.filter(p => p.name).map(p => ({
-          head: `<div class="cv-row"><strong>${esc(p.name)}</strong>${p.url ? `<span class="cv-date">${esc(p.url)}</span>` : ''}</div>${p.description ? `<p class="cv-text">${fmt(p.description)}</p>` : ''}`, bullets: [] }));
+          head: `<div class="cv-row"><strong>${esc(p.name)}</strong>${p.url ? `<span class="cv-date">${safeUrl(p.url) ? `<a href="${esc(safeUrl(p.url))}" target="_blank" rel="noopener noreferrer">${esc(p.url)}</a>` : esc(p.url)}</span>` : ''}</div>${p.description ? `<p class="cv-text">${fmt(p.description)}</p>` : ''}`, bullets: [] }));
       } else if (key === 'certificates') {
         items = cv.certificates.filter(c => c.name).map(c => ({
           head: `<div class="cv-row"><strong>${esc(c.name)}</strong><span class="cv-date">${esc(c.date)}</span></div>${c.issuer ? `<div class="cv-sub">${esc(c.issuer)}</div>` : ''}`, bullets: [], compact: true }));
@@ -361,14 +416,20 @@
   }
   function headInner(cv, id, design) {
     const b = cv.basics;
-    const contact = [b.email, b.phone, b.location, b.url].filter(Boolean).map(c => `<span>${esc(c)}</span>`).join('');
-    return `${b.photo ? `<img class="cv-photo" src="${esc(b.photo)}" alt="">` : ''}<div class="cv-headtext">
+    const link = (href, text) => `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>`;
+    const mail = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(b.email) ? link('mailto:' + b.email, b.email) : esc(b.email);
+    const tel = b.phone.replace(/[^\d+]/g, '').length >= 7 ? link('tel:' + b.phone.replace(/[^\d+]/g, ''), b.phone) : esc(b.phone);
+    const web = safeUrl(b.url) ? link(safeUrl(b.url), b.url) : esc(b.url);
+    const contact = [b.email && mail, b.phone && tel, b.location && esc(b.location), b.url && web].filter(Boolean).map(c => `<span>${c}</span>`).join('');
+    const photo = safePhoto(b.photo);
+    return `${photo ? `<img class="cv-photo" src="${photo}" alt="">` : ''}<div class="cv-headtext">
         <h1 class="cv-name">${esc(b.name || 'Your name')}</h1>
         ${b.label ? `<p class="cv-label">${esc(b.label)}</p>` : ''}
         <p class="cv-contact">${contact}</p>
         ${design.showId && id ? `<p class="cv-id" title="Universal CV ID">${esc(id)}</p>` : ''}</div>`;
   }
   function styleVars(design) {
+    design = cleanDesign(design);
     const fid = !design.font || design.font === 'auto' ? ({ classic: 'source', plain: 'arial' }[design.template] || 'plex') : design.font;
     const font = (FONTS.find(x => x.id === fid) || FONTS[1]).css;
     const accent = design.template === 'plain' ? '#111111' : (design.accent || ACCENTS[0]);
@@ -379,7 +440,8 @@
 
   // Lay the CV out on real A4 pages. Returns the number of pages.
   function paginate(host, res, id) {
-    const { cv, order, design } = res;
+    const { cv, order } = res;
+    const design = cleanDesign(res.design);
     const tpl = design.template;
     host.innerHTML = '';
     const vars = styleVars(design);
@@ -479,7 +541,7 @@
     return paras.join('\n\n');
   }
   function renderLetter(host, res, v, id) {
-    const cv = res.cv, design = res.design;
+    const cv = res.cv, design = cleanDesign(res.design);
     host.innerHTML = '';
     const page = mk('article', `cv cv-page cv-letter t-${design.template === 'ledger' ? 'meridian' : design.template}`);
     page.setAttribute('style', styleVars(design));
@@ -806,20 +868,30 @@
   const encode = payload => LZString.compressToEncodedURIComponent(JSON.stringify(payload));
   function decode(str) { try { return JSON.parse(LZString.decompressFromEncodedURIComponent(str)); } catch (e) { return null; } }
   function shareLink(store, res) {
+    const sh = store.share || { email: true, location: true };
     const cv = clone(res.cv); cv.basics.photo = '';
+    if (!sh.email) cv.basics.email = '';
+    if (!sh.phone) cv.basics.phone = '';
+    if (!sh.location) cv.basics.location = '';
     const d = Object.assign({}, res.design, { photo: false });
     return siteBase() + 'p.html#' + encode({ v: 3, t: 'cv', id: store.id, cv, d, ord: res.order });
   }
   function cardLink(store, res) {
-    const b = res.cv.basics;
-    return siteBase() + 'p.html#' + encode({ v: 3, t: 'card', id: store.id, n: b.name, l: b.label, e: b.email, p: b.phone, loc: b.location, u: b.url });
+    const b = res.cv.basics, sh = store.share || {};
+    return siteBase() + 'p.html#' + encode({ v: 3, t: 'card', id: store.id, n: b.name, l: b.label, e: sh.email ? b.email : '', p: sh.phone ? b.phone : '', loc: sh.location ? b.location : '', u: b.url });
   }
-  // shared links made before v3 carried a different shape: bring them up to date
+  // A link can be written by anyone, so every field is checked before it is shown. Links made before v3 are upgraded.
   function fromShare(data) {
-    const cv = Object.assign({ basics: {}, work: [], education: [], skills: [], projects: [], certificates: [], languages: [], custom: [] }, data.cv);
-    cv.work = cv.work.map(w => Object.assign({}, w, { highlights: Array.isArray(w.highlights) ? w.highlights : lines(w.highlights) }));
-    const design = Object.assign(clone(DEFAULT_DESIGN), data.d || { template: data.tpl || 'meridian', accent: data.ac || ACCENTS[0] });
-    return { cv, design, order: data.ord || DEFAULT_ORDER, name: 'CV' };
+    data = obj(data);
+    const cv = cleanCV(data.cv);
+    cv.basics.photo = '';
+    const design = cleanDesign(data.d || { template: data.tpl, accent: data.ac });
+    design.photo = false;
+    return { cv, design, order: cleanOrder(data.ord), name: 'CV' };
+  }
+  function fromCard(data) {
+    data = obj(data);
+    return { n: str(data.n, 200), l: str(data.l, 200), e: str(data.e, 200), p: str(data.p, 60), loc: str(data.loc, 200), u: str(data.u, 300) };
   }
 
   // ---------- JSON Resume ----------
@@ -968,6 +1040,6 @@
     esc, uid, clone, fmt, plain, lines, formatMonth, dateRange, newId, shortId, mrz,
     blankMaster, blankItem, newVersion, freshStore, toMaster, load, save, resolve, sectionKeys, sectionTitle, fixOrder, allIds,
     paginate, renderLetter, draftLetter, letterText, score, match, keywords, parseText,
-    shareLink, cardLink, fromShare, encode, decode, siteBase, toJSONResume, fromJSONResume, pdf, docxBlob, fileStem
+    shareLink, cardLink, fromShare, fromCard, cleanCV, cleanDesign, cleanOrder, safeUrl, safePhoto, validId, encode, decode, siteBase, toJSONResume, fromJSONResume, pdf, docxBlob, fileStem
   };
 })();

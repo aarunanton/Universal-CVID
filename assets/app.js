@@ -5,11 +5,12 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+  // every library ships with the site: nothing is fetched from other servers
   const LIBS = {
-    pdfjs: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
-    pdfworker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js',
-    mammoth: 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js',
-    docx: 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js'
+    pdfjs: 'assets/vendor/pdf.min.js',
+    pdfworker: 'assets/vendor/pdf.worker.min.js',
+    mammoth: 'assets/vendor/mammoth.browser.min.js',
+    docx: 'assets/vendor/docx.umd.js'
   };
 
   let store = UCV.load();
@@ -431,10 +432,14 @@
             <div style="min-width:0"><div class="idcard-name">${esc(b.name || 'Your name')}</div><div class="idcard-label">${esc(b.label || 'Your title')}</div><div class="idcard-id">${esc(store.id)}</div></div></div>
           <div class="idcard-mrz" aria-hidden="true">${esc(l1)}\n${esc(l2)}</div>
         </div>
+        <p class="hint" style="margin-top:.7rem">The card is a design, not an official document. Details on it are self-declared; verification is on the roadmap.</p>
       </section>
       <section class="panel">
         <h2>Share</h2>
-        <p class="sub">Links carry your CV inside them, so they work without an account. Anyone with the link can read it. Photos are left out of links.</p>
+        <p class="sub">Links carry your CV inside them, so they work without an account. <b>A link can't be taken back once sent</b>, and anyone who has it can read it. Photos are never included.</p>
+        <div class="share-opts"><span>Contact details to include:</span>
+          ${[['email', 'Email'], ['phone', 'Phone'], ['location', 'Location']].map(([k, l]) => `<label class="switch"><input type="checkbox" data-share="${k}" ${(store.share || {})[k] ? 'checked' : ''}> ${l}</label>`).join('')}
+        </div>
         <div class="share-grid">
           <div class="stack">
             <label class="field" for="shareLink">Full CV link (“${esc(r.name)}”)<div class="linkbox"><input id="shareLink" type="text" readonly value="${esc(UCV.shareLink(store, r))}"><button class="btn" data-action="copy" data-src="shareLink">Copy</button></div></label>
@@ -468,7 +473,7 @@
       <section class="apps">${apps.length ? apps.map(a => `
         <div class="app-row">
           <div class="top"><span class="who">${esc(a.company)}</span><span class="meta">${esc(a.role)}</span><span class="spacer"></span><span class="pill st-${a.status}">${a.status}</span></div>
-          <div class="meta">${a.date ? new Date(a.date + 'T00:00').toLocaleDateString() : 'No date'}${a.url ? ` · <a href="${esc(a.url)}" target="_blank" rel="noopener">Job advert</a>` : ''}</div>
+          <div class="meta">${a.date ? new Date(a.date + 'T00:00').toLocaleDateString() : 'No date'}${UCV.safeUrl(a.url) ? ` · <a href="${esc(UCV.safeUrl(a.url))}" target="_blank" rel="noopener noreferrer">Job advert</a>` : ''}</div>
           <div class="ctrls">
             <select data-app="${a.aid}" data-field="status" aria-label="Status">${UCV.STATUSES.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select>
             <select data-app="${a.aid}" data-field="vid" aria-label="CV version">${verOpts(a.vid)}</select>
@@ -507,7 +512,7 @@
     await loadScript(LIBS.pdfjs);
     const lib = window.pdfjsLib;
     lib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker;
-    const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const doc = await lib.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false }).promise;
     const out = [];
     for (let p = 1; p <= doc.numPages; p++) {
       const content = await (await doc.getPage(p)).getTextContent();
@@ -569,6 +574,7 @@
     } catch (e) { toast(e.message || 'Could not read that file.', true); }
   }
   function offerImport(cv) {
+    cv = UCV.cleanCV(cv);
     if (hasRealContent() && !store.isNew) { pendingImport = cv; renderPanel(); $('#panel').scrollIntoView({ block: 'start' }); }
     else applyImport(cv);
   }
@@ -674,7 +680,13 @@
       case 'toggle': toggleId(btn.dataset.id); redraw(); break;
       case 'add-item': {
         const list = getPath(m, btn.dataset.path);
-        list.push(UCV.blankItem(btn.dataset.section));
+        const fresh = UCV.blankItem(btn.dataset.section);
+        if (btn.dataset.section === 'work' && list.length) { // carry dates over from the neighbouring role; both stay editable
+          const first = list[0], last = list[list.length - 1];
+          const oldestFirst = list.length > 1 && first.startDate && last.startDate && first.startDate < last.startDate;
+          if (oldestFirst) fresh.startDate = last.endDate || ''; else fresh.endDate = last.startDate || '';
+        }
+        list.push(fresh);
         openGroups.add(btn.dataset.path.startsWith('custom') ? 'c:' + m.custom[+btn.dataset.path.split('.')[1]].id : btn.dataset.section);
         redraw();
         setTimeout(() => { const items = $$('.item', btn.closest('.group-body')); items[items.length - 1]?.querySelector('input[type=text], input[type=email]')?.focus(); }, 0);
@@ -792,6 +804,7 @@
     const t = e.target, v = active(), d = t.dataset;
     if (t.id === 'versionSelect') { store.active = t.value; persist(); renderAll(); return; }
     if (d.toggle) { toggleId(d.toggle); renderPanel(); renderPreview(); renderBar(); return; }
+    if (d.share) { store.share = store.share || { email: true, phone: false, location: true }; store.share[d.share] = t.checked; UCV.save(store); renderPanel(); return; }
     if (d.sec) { v.hiddenSections = t.checked ? v.hiddenSections.filter(k => k !== d.sec) : [...v.hiddenSections, d.sec]; persist(); renderPanel(); renderPreview(); renderBar(); return; }
     if (d.dbool) { v.design[d.dbool] = t.checked; persist(); renderPreview(); renderBar(); return; }
     if (d.d && t.tagName === 'SELECT') { v.design[d.d] = t.value; persist(); renderPreview(); return; }
@@ -841,7 +854,7 @@
     if (e.target.id !== 'appForm') return;
     e.preventDefault();
     const f = new FormData(e.target);
-    store.applications.push({ aid: UCV.uid('a'), company: f.get('company').trim(), role: f.get('role').trim(), vid: f.get('vid'), status: 'Applied', date: f.get('date'), url: f.get('url').trim(), notes: '' });
+    store.applications.push({ aid: UCV.uid('a'), company: f.get('company').trim(), role: f.get('role').trim(), vid: f.get('vid'), status: 'Applied', date: f.get('date'), url: UCV.safeUrl(f.get('url')), notes: '' });
     persist(); renderBar(); renderPanel(); toast('Application added');
   });
 
