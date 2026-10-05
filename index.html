@@ -6,70 +6,81 @@
 <title>Universal CV ID</title>
 <meta name="description" content="One ID for your whole career. Build your CV, tailor it to each job, share it by link or QR code. Free, and your data stays in your browser.">
 <meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0F0A1F">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<script src="assets/boot.js?v=4"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=4">
-<link rel="stylesheet" href="assets/styles.css?v=4">
+<script src="assets/boot.js?v=6"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=6">
+<link rel="stylesheet" href="assets/styles.css?v=6">
 </head>
 <body>
   <nav class="site-nav" aria-label="Main">
     <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID</a>
     <div class="links">
-      <a class="btn btn-ghost" href="#features">Features</a>
-      <a class="btn btn-ghost" href="#how">How it works</a>
+      <a class="btn btn-ghost" href="index.html#features">Features</a>
+      <a class="btn btn-ghost" href="index.html#pipeline">What's next</a>
+      <a class="btn btn-ghost" href="privacy.html">Privacy</a>
       <a class="btn btn-primary" href="app.html">Open the builder</a>
     </div>
   </nav>
 
   <header class="hero">
-    <div>
-      <p class="eyebrow">Free · No account · Your data stays in your browser</p>
-      <h1 style="margin-top:14px">One ID.<br><em>Every version</em> of your career.</h1>
-      <p class="lede">Import your CV or build it here, and get a permanent Universal CV ID. Tick what each job needs, check it against the advert, and send a matching PDF, Word file, link or QR code.</p>
-      <div class="ctas">
-        <a class="btn btn-primary" href="app.html">Create your CV ID</a>
-        <a class="btn" href="app.html#match">Try the job match</a>
-      </div>
-    </div>
-    <div class="hero-visual" aria-hidden="true">
-      <div class="stack-cards">
-        <div class="idcard">
-          <div class="idcard-top"><span>Universal CV ID</span><span>Professional</span></div>
-          <div class="idcard-body">
-            <div class="idcard-photo">MO</div>
-            <div style="min-width:0">
-              <div class="idcard-name">Maya Okafor</div>
-              <div class="idcard-label">Senior Product Designer</div>
-              <div class="idcard-id">#UCVID-K7Q4M</div>
-            </div>
-          </div>
-          <div class="idcard-mrz" id="heroMrz"></div>
+    <div class="hero-panel">
+      <div>
+        <p class="wordmark hero-mark">Universal CV ID</p>
+        <h1>One ID.<br><em>Every version</em> of your career.</h1>
+        <p class="lede">Import your CV or build it here, and get a permanent Universal CV ID. Tick what each job needs, check it against the advert, and send a matching PDF, Word file, link or QR code.</p>
+        <div class="ctas">
+          <a class="btn btn-primary" href="app.html">Create your CV ID</a>
+          <a class="btn btn-on-dark" href="app.html#match">Try the job match</a>
         </div>
-        <div class="ver v1"><b>Northwind Labs – Lead Designer</b><span class="pill st-Interview">Interview</span></div>
-        <div class="ver v2"><b>Harbour Bank – Senior UX</b><span class="pill st-Applied">Applied</span></div>
+        <ul class="tagrow" aria-label="Good to know">
+          <li class="tag tag-lime">Free</li>
+          <li class="tag tag-sky">No account</li>
+          <li class="tag">Stays in your browser</li>
+        </ul>
       </div>
-      <p class="caption">One ID, three tailored versions, each tracked to the job it was sent to.</p>
+      <div class="hero-visual" aria-hidden="true">
+        <div class="stack-cards">
+          <div class="idcard">
+            <div class="idcard-top"><span>Universal CV ID</span><span>Professional</span></div>
+            <div class="idcard-body">
+              <div class="idcard-photo">MO</div>
+              <div style="min-width:0">
+                <div class="idcard-name">Maya Okafor</div>
+                <div class="idcard-label">Senior Product Designer</div>
+                <div class="idcard-id">#UCVID-K7Q4M</div>
+              </div>
+            </div>
+            <div class="idcard-mrz" id="heroMrz"></div>
+          </div>
+          <div class="ver v1"><b>Northwind Labs – Lead Designer</b><span class="pill st-Interview">Interview</span></div>
+          <div class="ver v2"><b>Harbour Bank – Senior UX</b><span class="pill st-Applied">Applied</span></div>
+        </div>
+        <p class="caption">One ID, three tailored versions, each tracked to the job it was sent to.</p>
+      </div>
     </div>
   </header>
 
   <section class="section" id="features">
-    <h2>Everything a modern CV builder does, tied to one ID</h2>
-    <p class="intro">We looked at what the leading CV builders compete on and built each feature around your Universal CV ID.</p>
+    <span class="eyebrow">What you get today</span>
+    <h2>A full CV builder, tied to one ID</h2>
+    <p class="intro">Everything the leading CV builders compete on, built around your Universal CV ID.</p>
     <div class="features">
-      <article class="feature"><span class="eyebrow">Import</span><h3>Bring your existing CV</h3><p>Upload a PDF or Word file and the sections are filled in for you. No retyping.</p></article>
-      <article class="feature"><span class="eyebrow">Master CV</span><h3>Tick what each job needs</h3><p>Keep everything you've done in one place. Tick the roles, bullets and skills each version shows; the rest stays stored.</p></article>
-      <article class="feature"><span class="eyebrow">Score</span><h3>Every check, pass or fail</h3><p>Content, format and best-practice checks: bullets per role, numbers, weak openers, buzzwords, length and more.</p></article>
-      <article class="feature"><span class="eyebrow">Job match</span><h3>Match score against the advert</h3><p>Paste a job advert to see which keywords you cover and which are missing. Save the result as a tailored version.</p></article>
-      <article class="feature"><span class="eyebrow">Design</span><h3>Six templates, full type control</h3><p>Font, size, spacing, margins, date format, accent colour and an optional photo. A plain version for screening software.</p></article>
-      <article class="feature"><span class="eyebrow">Pages</span><h3>Real A4 pages, exact PDF</h3><p>Long CVs flow onto page two with page numbers. The PDF matches the preview and uses real text. Word export too.</p></article>
-      <article class="feature"><span class="eyebrow">Cover letter</span><h3>A letter for every version</h3><p>Drafted from your CV and the job advert, in the same design, ready to edit and download.</p></article>
-      <article class="feature"><span class="eyebrow">Share</span><h3>Link and QR code</h3><p>Share a full CV link or a short contact card with a QR code. No account needed to view.</p></article>
-      <article class="feature"><span class="eyebrow">Tracker</span><h3>Know what you sent where</h3><p>Track applications from Saved to Offer, and see which CV version went to which company.</p></article>
+      <article class="feature "><div class="top"><span class="eyebrow">Import</span><span class="num" aria-hidden="true">01</span></div><h3>Bring your existing CV</h3><p>Upload a PDF or Word file and the sections are filled in for you. No retyping.</p></article>
+      <article class="feature f-lime"><div class="top"><span class="eyebrow">Master CV</span><span class="num" aria-hidden="true">02</span></div><h3>Tick what each job needs</h3><p>Keep everything you've done in one place. Tick the roles, bullets and skills each version shows; the rest stays stored.</p></article>
+      <article class="feature "><div class="top"><span class="eyebrow">Score</span><span class="num" aria-hidden="true">03</span></div><h3>Every check, pass or fail</h3><p>Content, format and best-practice checks: bullets per role, numbers, weak openers, buzzwords, length and more.</p></article>
+      <article class="feature f-night"><div class="top"><span class="eyebrow">Job match</span><span class="num" aria-hidden="true">04</span></div><h3>Match score against the advert</h3><p>Paste a job advert to see which keywords you cover and which are missing. Save the result as a tailored version.</p></article>
+      <article class="feature "><div class="top"><span class="eyebrow">Design</span><span class="num" aria-hidden="true">05</span></div><h3>Six templates, full type control</h3><p>Font, size, spacing, margins, date format, accent colour and an optional photo. A plain version for screening software.</p></article>
+      <article class="feature f-sky"><div class="top"><span class="eyebrow">Pages</span><span class="num" aria-hidden="true">06</span></div><h3>Real A4 pages, exact PDF</h3><p>Long CVs flow onto page two with page numbers. The PDF matches the preview and uses real text. Word export too.</p></article>
+      <article class="feature "><div class="top"><span class="eyebrow">Cover letter</span><span class="num" aria-hidden="true">07</span></div><h3>A letter for every version</h3><p>Drafted from your CV and the job advert, in the same design, ready to edit and download.</p></article>
+      <article class="feature f-pop"><div class="top"><span class="eyebrow">Share</span><span class="num" aria-hidden="true">08</span></div><h3>Link and QR code</h3><p>Share a full CV link or a short contact card with a QR code. No account needed to view.</p></article>
+      <article class="feature "><div class="top"><span class="eyebrow">Tracker</span><span class="num" aria-hidden="true">09</span></div><h3>Know what you sent where</h3><p>Track applications from Saved to Offer, and see which CV version went to which company.</p></article>
     </div>
   </section>
 
-  <section class="section" id="how">
-    <h2>How it works</h2>
+  <section class="section" id="how" style="padding-top:0">
+    <span class="eyebrow">How it works</span>
+    <h2>Three steps, about ten minutes</h2>
     <ol class="how">
       <li><h3>Import or build your CV</h3><p>Upload a PDF or Word file, or start blank with a live A4 preview. Your Universal CV ID is created the moment you start.</p></li>
       <li><h3>Tailor it to a job</h3><p>Paste the advert, tick the roles and bullets that fit, close the keyword gaps, and draft the cover letter.</p></li>
@@ -77,20 +88,54 @@
     </ol>
   </section>
 
+  <div class="band" id="pipeline">
+    <div class="pipeline-panel">
+      <span class="eyebrow">In the pipeline</span>
+      <h2>The builder is step one.</h2>
+      <p class="intro">Your ID is meant to carry more than a document. Here is what we are working on next.</p>
+      <div class="soon-grid">
+        <article class="soon"><span class="tag tag-soon">Coming soon</span><h3>Candidate profile</h3><p>A living profile behind your ID, so your career is more than a single file.</p></article>
+        <article class="soon"><span class="tag tag-soon">Coming soon</span><h3>Verification</h3><p>A way to back up what your CV says, so the people reading it can trust it faster.</p></article>
+        <article class="soon"><span class="tag tag-soon">Coming soon</span><h3>Validation</h3><p>A quick check that a Universal CV ID is genuine and up to date.</p></article>
+      </div>
+      <p class="fine">None of this is live yet, and plans can change. Today every CV is self-declared.</p>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="privacy-strip">
+      <div>
+        <span class="eyebrow">Your data</span>
+        <h2>Your CV stays on your device.</h2>
+        <a class="btn" href="privacy.html">How your data is handled</a>
+      </div>
+      <ul>
+        <li>No account, no sign-up, no password.</li>
+        <li>Nothing you type is sent to us. It is saved in your own browser.</li>
+        <li>No cookies, no trackers, no adverts.</li>
+        <li>You decide what goes into a shared link.</li>
+      </ul>
+    </div>
+  </section>
+
   <div class="cta-band">
     <div class="inner">
-      <h2>Get your Universal CV ID. It takes about ten minutes.</h2>
+      <h2>Get your Universal CV ID.</h2>
       <a class="btn btn-primary" href="app.html">Open the builder</a>
     </div>
   </div>
 
   <footer class="site-foot">
-    <span>Universal CV ID · open source under the MIT licence</span>
-    <span class="spacer"></span>
-    <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
+    <div class="wordmark" aria-hidden="true">Universal CV ID</div>
+    <div class="foot-row">
+      <span>Universal CV ID · open source under the MIT licence</span>
+      <span class="spacer"></span>
+      <a href="privacy.html">Data and privacy</a>
+      <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
+    </div>
   </footer>
 
-  <script src="assets/cv.js?v=4"></script>
-  <script src="assets/home.js?v=4"></script>
+  <script src="assets/cv.js?v=6"></script>
+  <script src="assets/home.js?v=6"></script>
 </body>
 </html>

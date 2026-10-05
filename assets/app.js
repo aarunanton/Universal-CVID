@@ -23,6 +23,24 @@
 
   const onOwnSite = !/claude/.test(location.hostname); // downloads and printing are blocked inside the Claude preview window
   const TABS = [['edit', 'Content'], ['design', 'Design'], ['score', 'Score'], ['match', 'Job match'], ['letter', 'Cover letter'], ['versions', 'Versions'], ['share', 'Share & export'], ['tracker', 'Tracker']];
+  const TAB_SHORT = { match: 'Match', letter: 'Letter', share: 'Share' };
+  const TAB_ICON = {
+    edit: '<path d="M6 3h9l4 4v14H6z"/><path d="M9 8h3M9 12h7M9 16h7"/>',
+    design: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+    score: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-6"/>',
+    match: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+    letter: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 8l9 6 9-6"/>',
+    versions: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>',
+    share: '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
+    tracker: '<rect x="4" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="10" rx="1"/><rect x="16" y="4" width="4" height="13" rx="1"/>'
+  };
+  const isPhone = () => matchMedia('(max-width: 760px)').matches;
+  function syncPreviewBtn() {
+    const b = $('#previewFab'); if (!b) return;
+    const on = document.body.classList.contains('show-preview');
+    b.setAttribute('aria-pressed', on);
+    b.lastElementChild.textContent = on ? 'Back to editing' : 'Preview';
+  }
 
   // ---------- state helpers ----------
   const active = () => store.versions.find(v => v.vid === store.active) || store.versions[0];
@@ -77,13 +95,15 @@
     $('#idChip').textContent = store.id;
     $('#versionSelect').innerHTML = store.versions.map(v => `<option value="${v.vid}" ${v.vid === store.active ? 'selected' : ''}>${esc(v.name)}</option>`).join('');
     const sc = UCV.score(res(), pages);
-    $('#tabs').innerHTML = TABS.map(([id, label]) => {
+    const tabsEl = $('#tabs'), tabsScroll = tabsEl.scrollLeft;
+    tabsEl.innerHTML = TABS.map(([id, label]) => {
       let badge = '';
       if (id === 'score') badge = `<span class="badge" id="scoreBadge">${sc.score}</span>`;
       if (id === 'versions') badge = `<span class="badge">${store.versions.length}</span>`;
       if (id === 'tracker' && store.applications.length) badge = `<span class="badge">${store.applications.length}</span>`;
-      return `<button class="tab" role="tab" data-tab="${id}" aria-selected="${tab === id}" id="tab-${id}">${label}${badge}</button>`;
+      return `<button class="tab" role="tab" data-tab="${id}" aria-selected="${tab === id}" id="tab-${id}"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${TAB_ICON[id]}</svg></span><span class="tab-tx">${label}</span><span class="tab-sh" aria-hidden="true">${TAB_SHORT[id] || label}</span>${badge}</button>`;
     }).join('');
+    tabsEl.scrollLeft = tabsScroll;
     document.body.classList.toggle('is-start', !!store.isNew);
   }
 
@@ -184,7 +204,7 @@
       <section class="panel start">
         <p class="eyebrow">Your ID is ready</p>
         <h2>${esc(store.id)} is yours. How do you want to start?</h2>
-        <p class="sub">Everything stays in this browser. You can switch approach later.</p>
+        <p class="sub">Everything stays in this browser. <a href="privacy.html">How your data is handled</a>. You can switch approach later.</p>
         <div class="start-grid">
           <label class="start-card primary" for="startFile">
             <b>Import my CV</b><span>Upload a PDF or Word file and we fill in the sections for you.</span>
@@ -655,7 +675,11 @@
       const was = tab; tab = tabBtn.dataset.tab;
       try { history.replaceState(null, '', '#' + tab); } catch (_) {}
       renderPanel(); if (was === 'letter' || tab === 'letter') renderPreview(); renderBar();
-      $('#panel').scrollIntoView({ block: 'nearest' });
+      if (isPhone()) {
+        document.body.classList.remove('show-preview'); syncPreviewBtn(); window.scrollTo(0, 0);
+        const cur = $('#tab-' + tab), bar = $('#tabs');
+        if (cur) bar.scrollLeft = cur.offsetLeft - (bar.clientWidth - cur.offsetWidth) / 2;
+      } else $('#panel').scrollIntoView({ block: 'nearest' });
       return;
     }
     const btn = e.target.closest('[data-action]');
@@ -667,6 +691,7 @@
     switch (a) {
       case 'start-blank': store = UCV.freshStore(false); store.isNew = false; UCV.save(store); tab = 'edit'; renderAll(); toast('Blank CV ready. Your ID is ' + store.id); break;
       case 'start-example': store.isNew = false; persist(); renderAll(); break;
+      case 'toggle-preview': document.body.classList.toggle('show-preview'); syncPreviewBtn(); fitPaper(); window.scrollTo(0, 0); break;
       case 'restart': armed(btn, 'Click again to start over', () => { store = UCV.freshStore(true); UCV.save(store); tab = 'edit'; importNote = false; renderAll(); }); break;
       case 'dismiss-import': importNote = false; renderPanel(); break;
       case 'confirm-import': applyImport(pendingImport); break;
