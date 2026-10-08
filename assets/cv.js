@@ -7,7 +7,7 @@
   const STORE_KEY = 'ucvid:v3';
   const V2_KEY = 'ucvid:v2';
   const LEGACY_KEY = 'universalCVs';
-  const CANONICAL_BASE = 'https://aarunanton.github.io/Universal-CVID/';
+  const CANONICAL_BASE = 'https://cvid.app/';
 
   const SECTION_LABELS = {
     summary: 'Profile', work: 'Experience', education: 'Education', skills: 'Skills',
