@@ -354,22 +354,30 @@
   }
 
   // what one version actually shows: master content minus what is unticked
-  function resolve(store, v) {
+  function resolve(store, v, ed) {
     const hid = new Set(v.hidden);
     const vis = x => !hid.has(x.id);
     const m = store.master;
+    const idx = arr => arr.map((x, i) => ({ x, i })).filter(o => vis(o.x));
+    const tag = (obj, path) => { if (ed) obj._e = path; return obj; };
+    const skills = idx(m.skills).filter(o => o.x.name);
     const cv = {
-      basics: { name: m.basics.name, email: m.basics.email, phone: m.basics.phone, location: m.basics.location, url: m.basics.url,
-        label: v.label, summary: v.summary, photo: v.design.photo ? m.basics.photo : '' },
-      work: m.work.filter(vis).map(w => ({ position: w.position, company: w.company, location: w.location, startDate: w.startDate, endDate: w.endDate,
-        highlights: w.bullets.filter(vis).map(b => b.text.trim()).filter(Boolean) })),
-      education: m.education.filter(vis).map(e => ({ degree: e.degree, institution: e.institution, year: e.year, details: e.details })),
-      skills: m.skills.filter(vis).map(s => s.name).filter(Boolean),
-      projects: m.projects.filter(vis).map(p => ({ name: p.name, description: p.description, url: p.url })),
-      certificates: m.certificates.filter(vis).map(c => ({ name: c.name, issuer: c.issuer, date: c.date })),
-      languages: m.languages.filter(vis).map(l => ({ language: l.language, fluency: l.fluency })),
-      custom: m.custom.map(c => ({ key: 'c:' + c.id, title: c.title, items: c.items.filter(vis).map(i => ({ title: i.title, sub: i.sub, date: i.date, text: i.text })) }))
+      basics: tag({ name: m.basics.name, email: m.basics.email, phone: m.basics.phone, location: m.basics.location, url: m.basics.url,
+        label: v.label, summary: v.summary, photo: v.design.photo ? m.basics.photo : '' }, 'basics'),
+      work: idx(m.work).map(({ x: w, i }) => {
+        const bs = w.bullets.map((b, j) => ({ b, j })).filter(o => vis(o.b) && (o.b.text.trim() || (ed && ed.keep === o.b.id)));
+        const out = tag({ position: w.position, company: w.company, location: w.location, startDate: w.startDate, endDate: w.endDate, highlights: bs.map(o => o.b.text.trim()) }, 'work.' + i);
+        if (ed) out._be = bs.map(o => `work.${i}.bullets.${o.j}.text`);
+        return out;
+      }),
+      education: idx(m.education).map(({ x: e, i }) => tag({ degree: e.degree, institution: e.institution, year: e.year, details: e.details }, 'education.' + i)),
+      skills: skills.map(o => o.x.name),
+      projects: idx(m.projects).map(({ x: p, i }) => tag({ name: p.name, description: p.description, url: p.url }, 'projects.' + i)),
+      certificates: idx(m.certificates).map(({ x: c, i }) => tag({ name: c.name, issuer: c.issuer, date: c.date }, 'certificates.' + i)),
+      languages: idx(m.languages).map(({ x: l, i }) => tag({ language: l.language, fluency: l.fluency }, 'languages.' + i)),
+      custom: m.custom.map((c, ci) => ({ key: 'c:' + c.id, title: c.title, items: idx(c.items).map(({ x: it, i }) => tag({ title: it.title, sub: it.sub, date: it.date, text: it.text }, `custom.${ci}.items.${i}`)) }))
     };
+    if (ed) cv._se = skills.map(o => `skills.${o.i}.name`);
     return { cv, order: v.order.filter(k => !v.hiddenSections.includes(k)), design: v.design, name: v.name };
   }
 
@@ -377,36 +385,37 @@
   function sectionsData(cv, order, design) {
     const f = design.dateFmt;
     const out = [];
-    const bul = arr => arr.map(h => `<li>${fmt(h)}</li>`);
+    const A = (o, f) => o && o._e ? ` data-e="m:${o._e}.${f}"` : '';
+    const bul = (arr, paths) => arr.map((h, i) => `<li${paths && paths[i] ? ` data-e="m:${paths[i]}"` : ''}>${fmt(h)}</li>`);
     order.forEach(key => {
       let items = [];
       let title = SECTION_LABELS[key];
       if (key === 'summary') {
-        if (cv.basics.summary) items = [{ head: `<p class="cv-summary">${fmt(cv.basics.summary)}</p>`, bullets: [] }];
+        if (cv.basics.summary) items = [{ head: `<p class="cv-summary"${cv.basics._e ? ' data-e="v:summary"' : ''}>${fmt(cv.basics.summary)}</p>`, bullets: [] }];
       } else if (key === 'work') {
         items = cv.work.filter(w => w.position || w.company).map(w => ({
-          head: `<div class="cv-row"><strong>${esc(w.position || 'Role')}</strong><span class="cv-date">${esc(dateRange(w.startDate, w.endDate, f))}</span></div><div class="cv-sub">${esc(w.company)}${w.location ? ' · ' + esc(w.location) : ''}</div>`,
-          bullets: bul(w.highlights) }));
+          head: `<div class="cv-row"><strong${A(w, 'position')}>${esc(w.position || 'Role')}</strong><span class="cv-date">${esc(dateRange(w.startDate, w.endDate, f))}</span></div><div class="cv-sub"><span${A(w, 'company')}>${esc(w.company)}</span>${w.location ? ` · <span${A(w, 'location')}>${esc(w.location)}</span>` : ''}</div>`,
+          bullets: bul(w.highlights, w._be) }));
       } else if (key === 'education') {
         items = cv.education.filter(e => e.degree || e.institution).map(e => ({
-          head: `<div class="cv-row"><strong>${esc(e.degree || 'Qualification')}</strong><span class="cv-date">${esc(e.year)}</span></div><div class="cv-sub">${esc(e.institution)}</div>${e.details ? `<p class="cv-text">${fmt(e.details)}</p>` : ''}`, bullets: [] }));
+          head: `<div class="cv-row"><strong${A(e, 'degree')}>${esc(e.degree || 'Qualification')}</strong><span class="cv-date"${A(e, 'year')}>${esc(e.year)}</span></div><div class="cv-sub"${A(e, 'institution')}>${esc(e.institution)}</div>${e.details ? `<p class="cv-text"${A(e, 'details')}>${fmt(e.details)}</p>` : ''}`, bullets: [] }));
       } else if (key === 'skills') {
-        if (cv.skills.length) items = [{ head: `<ul class="cv-tags">${cv.skills.map(s => `<li>${esc(s)}</li>`).join('')}</ul>`, bullets: [] }];
+        if (cv.skills.length) items = [{ head: `<ul class="cv-tags">${cv.skills.map((s, i) => `<li${cv._se ? ` data-e="m:${cv._se[i]}"` : ''}>${esc(s)}</li>`).join('')}</ul>`, bullets: [] }];
       } else if (key === 'projects') {
         items = cv.projects.filter(p => p.name).map(p => ({
-          head: `<div class="cv-row"><strong>${esc(p.name)}</strong>${p.url ? `<span class="cv-date">${safeUrl(p.url) ? `<a href="${esc(safeUrl(p.url))}" target="_blank" rel="noopener noreferrer">${esc(p.url)}</a>` : esc(p.url)}</span>` : ''}</div>${p.description ? `<p class="cv-text">${fmt(p.description)}</p>` : ''}`, bullets: [] }));
+          head: `<div class="cv-row"><strong${A(p, 'name')}>${esc(p.name)}</strong>${p.url ? `<span class="cv-date">${safeUrl(p.url) ? `<a href="${esc(safeUrl(p.url))}" target="_blank" rel="noopener noreferrer">${esc(p.url)}</a>` : esc(p.url)}</span>` : ''}</div>${p.description ? `<p class="cv-text"${A(p, 'description')}>${fmt(p.description)}</p>` : ''}`, bullets: [] }));
       } else if (key === 'certificates') {
         items = cv.certificates.filter(c => c.name).map(c => ({
-          head: `<div class="cv-row"><strong>${esc(c.name)}</strong><span class="cv-date">${esc(c.date)}</span></div>${c.issuer ? `<div class="cv-sub">${esc(c.issuer)}</div>` : ''}`, bullets: [], compact: true }));
+          head: `<div class="cv-row"><strong${A(c, 'name')}>${esc(c.name)}</strong><span class="cv-date"${A(c, 'date')}>${esc(c.date)}</span></div>${c.issuer ? `<div class="cv-sub"${A(c, 'issuer')}>${esc(c.issuer)}</div>` : ''}`, bullets: [], compact: true }));
       } else if (key === 'languages') {
         const ls = cv.languages.filter(l => l.language);
-        if (ls.length) items = [{ head: `<ul class="cv-plain">${ls.map(l => `<li><strong>${esc(l.language)}</strong>${l.fluency ? ' — ' + esc(l.fluency) : ''}</li>`).join('')}</ul>`, bullets: [] }];
+        if (ls.length) items = [{ head: `<ul class="cv-plain">${ls.map(l => `<li><strong${A(l, 'language')}>${esc(l.language)}</strong>${l.fluency ? ` — <span${A(l, 'fluency')}>${esc(l.fluency)}</span>` : ''}</li>`).join('')}</ul>`, bullets: [] }];
       } else if (key.startsWith('c:')) {
         const c = (cv.custom || []).find(x => x.key === key);
         if (c) {
           title = c.title || 'Section';
           items = c.items.filter(i => i.title || i.text).map(i => ({
-            head: (i.title || i.date ? `<div class="cv-row"><strong>${esc(i.title)}</strong><span class="cv-date">${esc(i.date)}</span></div>` : '') + (i.sub ? `<div class="cv-sub">${esc(i.sub)}</div>` : ''),
+            head: (i.title || i.date ? `<div class="cv-row"><strong${A(i, 'title')}>${esc(i.title)}</strong><span class="cv-date"${A(i, 'date')}>${esc(i.date)}</span></div>` : '') + (i.sub ? `<div class="cv-sub"${A(i, 'sub')}>${esc(i.sub)}</div>` : ''),
             bullets: bul(lines(i.text)) }));
         }
       }
@@ -420,11 +429,11 @@
     const mail = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(b.email) ? link('mailto:' + b.email, b.email) : esc(b.email);
     const tel = b.phone.replace(/[^\d+]/g, '').length >= 7 ? link('tel:' + b.phone.replace(/[^\d+]/g, ''), b.phone) : esc(b.phone);
     const web = safeUrl(b.url) ? link(safeUrl(b.url), b.url) : esc(b.url);
-    const contact = [b.email && mail, b.phone && tel, b.location && esc(b.location), b.url && web].filter(Boolean).map(c => `<span>${c}</span>`).join('');
+    const contact = [['email', b.email && mail], ['phone', b.phone && tel], ['location', b.location && esc(b.location)], ['url', b.url && web]].filter(c => c[1]).map(c => `<span${b._e ? ` data-e="m:basics.${c[0]}"` : ''}>${c[1]}</span>`).join('');
     const photo = safePhoto(b.photo);
     return `${photo ? `<img class="cv-photo" src="${photo}" alt="">` : ''}<div class="cv-headtext">
-        <h1 class="cv-name">${esc(b.name || 'Your name')}</h1>
-        ${b.label ? `<p class="cv-label">${esc(b.label)}</p>` : ''}
+        <h1 class="cv-name"${b._e ? ' data-e="m:basics.name"' : ''}>${esc(b.name || 'Your name')}</h1>
+        ${b.label ? `<p class="cv-label"${b._e ? ' data-e="v:label"' : ''}>${esc(b.label)}</p>` : ''}
         <p class="cv-contact">${contact}</p>
         ${design.showId && id ? `<p class="cv-id" title="Universal CV ID">${esc(id)}</p>` : ''}</div>`;
   }

@@ -22,17 +22,21 @@
   let storageWarned = false;
 
   const onOwnSite = !/claude/.test(location.hostname); // downloads and printing are blocked inside the Claude preview window
-  const TABS = [['edit', 'Content'], ['design', 'Design'], ['score', 'Score'], ['match', 'Job match'], ['letter', 'Cover letter'], ['versions', 'Versions'], ['share', 'Share & export'], ['tracker', 'Tracker']];
-  const TAB_SHORT = { match: 'Match', letter: 'Letter', share: 'Share' };
+  // Two places: the dashboard (everything across your CVs) and a CV workspace (one CV, step by step).
+  const DASH_TABS = [['home', 'Dashboard'], ['tracker', 'Applications'], ['profile', 'Profile']];
+  const CV_TABS = [['edit', 'Content'], ['design', 'Design'], ['match', 'Job match', 'Match'], ['score', 'CV check', 'Check'], ['letter', 'Cover letter', 'Letter'], ['share', 'Export']];
+  const ALL_TABS = DASH_TABS.concat(CV_TABS).map(t => t[0]).concat('versions');
+  const isDash = t => !CV_TABS.some(x => x[0] === t);
   const TAB_ICON = {
+    home: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+    tracker: '<rect x="4" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="10" rx="1"/><rect x="16" y="4" width="4" height="13" rx="1"/>',
+    profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     edit: '<path d="M6 3h9l4 4v14H6z"/><path d="M9 8h3M9 12h7M9 16h7"/>',
     design: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
-    score: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-6"/>',
     match: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+    score: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-6"/>',
     letter: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 8l9 6 9-6"/>',
-    versions: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>',
-    share: '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
-    tracker: '<rect x="4" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="10" rx="1"/><rect x="16" y="4" width="4" height="13" rx="1"/>'
+    share: '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'
   };
   const isPhone = () => matchMedia('(max-width: 760px)').matches;
   function syncPreviewBtn() {
@@ -94,16 +98,16 @@
   function renderBar() {
     $('#idChip').textContent = store.id;
     $('#versionSelect').innerHTML = store.versions.map(v => `<option value="${v.vid}" ${v.vid === store.active ? 'selected' : ''}>${esc(v.name)}</option>`).join('');
+    $('#verName').textContent = active().name;
     const sc = UCV.score(res(), pages);
-    const tabsEl = $('#tabs'), tabsScroll = tabsEl.scrollLeft;
-    tabsEl.innerHTML = TABS.map(([id, label]) => {
+    const dash = isDash(tab);
+    document.body.classList.toggle('mode-dash', dash);
+    $('#tabs').innerHTML = (dash ? DASH_TABS : CV_TABS).map(([id, label, short], i) => {
       let badge = '';
       if (id === 'score') badge = `<span class="badge" id="scoreBadge">${sc.score}</span>`;
-      if (id === 'versions') badge = `<span class="badge">${store.versions.length}</span>`;
       if (id === 'tracker' && store.applications.length) badge = `<span class="badge">${store.applications.length}</span>`;
-      return `<button class="tab" role="tab" data-tab="${id}" aria-selected="${tab === id}" id="tab-${id}"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${TAB_ICON[id]}</svg></span><span class="tab-tx">${label}</span><span class="tab-sh" aria-hidden="true">${TAB_SHORT[id] || label}</span>${badge}</button>`;
+      return `<button class="tab" role="tab" data-tab="${id}" aria-selected="${tab === id || (id === 'home' && tab === 'versions')}" id="tab-${id}"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${TAB_ICON[id]}</svg></span><span class="tab-tx">${label}</span><span class="tab-sh" aria-hidden="true">${short || label}</span>${badge}</button>`;
     }).join('');
-    tabsEl.scrollLeft = tabsScroll;
     document.body.classList.toggle('is-start', !!store.isNew);
   }
 
@@ -112,9 +116,78 @@
     const paper = $('#paper');
     const r = res();
     if (tab === 'letter') { pages = UCV.renderLetter(paper, r, active(), store.id); $('#pageCount').textContent = 'Cover letter · A4'; }
-    else { pages = UCV.paginate(paper, r, store.id); $('#pageCount').textContent = `Live preview · ${pages} page${pages > 1 ? 's' : ''} · A4`; }
+    else { pages = UCV.paginate(paper, Object.assign(UCV.resolve(store, active(), { keep: editKeep }), { jd: r.jd }), store.id); $('#pageCount').textContent = `Click any text to edit · ${pages} page${pages > 1 ? 's' : ''} · A4`; armPage(); }
     fitPaper();
   }
+  // ---------- editing on the page ----------
+  let editKeep = null, pageBusy = false;
+  const BULLET = /^work\.(\d+)\.bullets\.(\d+)\.text$/;
+  const edRef = el => ({ obj: el.dataset.e[0] === 'v' ? active() : store.master, path: el.dataset.e.slice(2) });
+  function armPage() {
+    $$('#paper [data-e]').forEach(el => {
+      el.setAttribute('contenteditable', 'plaintext-only');
+      if (el.contentEditable !== 'plaintext-only') el.setAttribute('contenteditable', 'true');
+      el.spellcheck = true;
+    });
+  }
+  function pageRefresh(focus, atEnd) {
+    pageBusy = true;
+    renderPreview(); if (tab === 'edit') renderPanel(); debounce(refreshScoreBadge, 300);
+    pageBusy = false;
+    const el = focus && $(`#paper [data-e="${focus}"]`);
+    if (el) { el.focus(); const r = document.createRange(); r.selectNodeContents(el); r.collapse(!atEnd); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+  }
+  const pageEl = e => e.target && e.target.closest ? e.target.closest('#paper [data-e]') : null;
+  document.addEventListener('focusin', e => {
+    const el = pageEl(e); if (!el) return;
+    const { obj, path } = edRef(el), raw = String(getPath(obj, path) == null ? '' : getPath(obj, path));
+    if (el.textContent !== raw) el.textContent = raw; // show the stored text (with any **bold** marks) while editing
+  });
+  document.addEventListener('input', e => {
+    const el = pageEl(e); if (!el) return;
+    const { obj, path } = edRef(el);
+    setPath(obj, path, el.textContent.replace(/\s*\n\s*/g, ' '));
+    persist();
+  });
+  document.addEventListener('paste', e => {
+    const el = pageEl(e); if (!el || el.contentEditable === 'plaintext-only') return;
+    e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text').replace(/\s*\n\s*/g, ' '));
+  });
+  document.addEventListener('keydown', e => {
+    const el = pageEl(e); if (!el) return;
+    const { path } = edRef(el), bm = path.match(BULLET);
+    if (e.key === 'Escape') { el.blur(); return; }
+    if (e.key === 'Enter' && !e.isComposing) {
+      e.preventDefault();
+      if (!bm) { el.blur(); return; }
+      const nb = { id: UCV.uid('b'), text: '' };
+      store.master.work[+bm[1]].bullets.splice(+bm[2] + 1, 0, nb); editKeep = nb.id; persist();
+      pageRefresh(`m:work.${bm[1]}.bullets.${+bm[2] + 1}.text`);
+    } else if (e.key === 'Backspace' && bm && !el.textContent && +bm[2] > 0) {
+      e.preventDefault();
+      store.master.work[+bm[1]].bullets.splice(+bm[2], 1); editKeep = null; persist();
+      const prev = $$(`#paper [data-e^="m:work.${bm[1]}.bullets."]`).map(x => x.dataset.e).filter(x => +x.match(/bullets\.(\d+)/)[1] < +bm[2]).pop();
+      pageRefresh(prev, true);
+    }
+  });
+  document.addEventListener('focusout', e => {
+    const el = pageEl(e); if (!el || pageBusy) return;
+    const { obj, path } = edRef(el), val = String(getPath(obj, path) == null ? '' : getPath(obj, path));
+    const bm = path.match(BULLET), sm = path.match(/^skills\.(\d+)\.name$/);
+    let structural = false;
+    if (!val.trim() && bm) { store.master.work[+bm[1]].bullets.splice(+bm[2], 1); structural = true; }
+    if (!val.trim() && sm) { store.master.skills.splice(+sm[1], 1); structural = true; }
+    if (structural) persist();
+    editKeep = null;
+    if (/(summary|text|details|description)$/.test(path)) el.innerHTML = UCV.fmt(val);
+    setTimeout(() => {
+      const a = document.activeElement;
+      if (!structural && a && a.closest && a.closest('#paper [data-e]')) return; // still editing elsewhere on the page
+      if (!structural && a && a.closest && a.closest('#panel')) { renderPreview(); debounce(refreshScoreBadge, 300); return; } // moved into the side panel: keep its focus
+      pageRefresh();
+    }, 0);
+  });
+
   function fitPaper() {
     const wrap = $('#paperWrap'), paper = $('#paper');
     const scale = Math.max(0.2, Math.min(1, (wrap.clientWidth - 36) / 794));
@@ -123,7 +196,7 @@
     paper.style.marginBottom = (paper.offsetHeight * (scale - 1)) + 'px';
     paper.style.marginRight = (794 * (scale - 1)) + 'px';
   }
-  const refreshScoreBadge = () => { const b = $('#scoreBadge'); if (b) b.textContent = UCV.score(res(), pages).score; if (tab === 'score') $('#panel').innerHTML = renderScore(); };
+  const refreshScoreBadge = () => { const b = $('#scoreBadge'); if (b) b.textContent = UCV.score(res(), pages).score; if (tab === 'score') $('#panel').innerHTML = renderScore() + nextBar(); };
   const refreshMatch = () => { const r = $('#matchResults'); if (r) r.innerHTML = matchResultsHTML(); };
 
   // ---------- form helpers ----------
@@ -222,14 +295,149 @@
   }
 
   // ---------- tabs ----------
+  function selection(v) {
+    const m = store.master, off = id => v.hidden.includes(id);
+    const all = m.work.flatMap(w => w.bullets.map(x => ({ id: x.id, parent: w.id })));
+    return { bullets: all.length, bulletsShown: all.filter(x => !off(x.id) && !off(x.parent)).length, skills: m.skills.length, skillsShown: m.skills.filter(x => !off(x.id)).length };
+  }
+  const journeyState = () => {
+    const m = store.master, j = store.journey || {};
+    return [
+      ['edit', 'Check your CV details', !!(m.basics.name && (m.work.length || m.education.length))],
+      ['design', 'Choose a design', !!j.design],
+      ['match', 'Tailor for a job', store.versions.some(x => (x.target.jd || '').trim())],
+      ['share', 'Download or share', !!j.exported],
+      ['tracker', 'Track your application', store.applications.length > 0]
+    ];
+  };
+  function cvStats() {
+    let tmp = $('#measure');
+    if (!tmp) { tmp = document.createElement('div'); tmp.id = 'measure'; tmp.setAttribute('aria-hidden', 'true'); document.body.appendChild(tmp); }
+    const out = store.versions.map(v => {
+      const r = Object.assign(UCV.resolve(store, v), { jd: v.target.jd });
+      let pg = pages;
+      if (v.vid !== store.active) { try { pg = UCV.paginate(tmp, r, store.id); } catch (e) { pg = 1; } }
+      const mt = UCV.match(r.cv, v.target.jd), apps = store.applications.filter(a => a.vid === v.vid);
+      return { v, score: UCV.score(r, pg).score, match: mt ? mt.score : null, apps: apps.length, sent: apps.filter(a => a.status !== 'Saved').length, interviews: apps.filter(a => a.status === 'Interview' || a.status === 'Offer').length };
+    });
+    tmp.innerHTML = '';
+    return out;
+  }
+  function renderHome() {
+    const m = store.master, first = (m.basics.name || '').trim().split(/\s+/)[0];
+    const stats = cvStats(), apps = store.applications;
+    const count = st => apps.filter(a => a.status === st).length;
+    const sent = apps.filter(a => a.status !== 'Saved').length, today = new Date().toISOString().slice(0, 10);
+    const live = apps.filter(a => ['Saved', 'Applied', 'Interview'].includes(a.status)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const avg = Math.round(stats.reduce((n, x) => n + x.score, 0) / stats.length);
+    return `
+      <section class="dash-head">
+        <div><span class="eyebrow">${esc(store.id)}</span>
+          <h2>${first ? esc(first) + '’s' : 'Your'} Universal CV</h2>
+          <p>Everything across your CVs and applications, in one place.</p></div>
+        <div class="row"><button class="btn btn-primary" data-action="app-add-go">+ Add application</button><button class="btn dash-alt" data-action="new-version">+ New CV</button></div>
+      </section>
+      <div class="kpis five">
+        <div class="kpi k-night"><b>${store.versions.length}</b><span>CV${store.versions.length === 1 ? '' : 's'}</span></div>
+        <div class="kpi k-lime"><b>${sent}</b><span>Applications sent</span></div>
+        <div class="kpi k-sky"><b>${count('Interview')}</b><span>Interviews</span></div>
+        <div class="kpi k-plain"><b>${count('Offer')}</b><span>Offers</span></div>
+        <div class="kpi k-plain"><b>${avg}</b><span>Average CV score</span></div>
+      </div>
+      <section class="panel">
+        <div class="trk-top">
+          <div><h2>Live applications</h2><p class="sub" style="margin:0">Jobs you have saved, applied for or are interviewing for.</p></div>
+          ${apps.length ? `<button class="btn btn-sm" data-tab="tracker">See all ${apps.length}</button>` : ''}
+        </div>
+        <div class="apps live">${live.length ? live.slice(0, 6).map(a => `
+          <div class="app-row live-row">
+            <button class="trk-main" data-action="app-goto" data-aid="${a.aid}"><b>${esc(a.role)}</b><span>${esc(a.company)}${a.date ? ' · ' + new Date(a.date + 'T00:00').toLocaleDateString() : ''}</span>${a.followUp && a.followUp <= today && a.status !== 'Saved' ? '<em>Follow up due</em>' : ''}</button>
+            <span class="live-cv">${esc((store.versions.find(x => x.vid === a.vid) || {}).name || 'CV removed')}</span>
+            <select class="st-sel st-${a.status}" data-app="${a.aid}" data-field="status" aria-label="Stage">${UCV.STATUSES.map(st => `<option ${st === a.status ? 'selected' : ''}>${st}</option>`).join('')}</select>
+          </div>`).join('') : '<p class="empty">Nothing live yet. Add the first job you are going for and track it from here.</p>'}</div>
+      </section>
+      <section class="panel">
+        <h2>Your CVs</h2>
+        <p class="sub">Click a CV to open it and work on its content, design, job match and export.</p>
+        ${versionCards(stats)}
+      </section>`;
+  }
+  function renderProfile() {
+    const r = res(), b = r.cv.basics, m = store.master, mb = m.basics, pf = store.prefs || {};
+    const [l1, l2] = UCV.mrz(store.id, b.name, b.label);
+    const initials = (b.name || '?').split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase();
+    const done = [mb.name, mb.email, mb.phone, mb.location, mb.url, m.work.length, m.education.length, m.skills.length >= 5, active().summary, pf.roles].filter(Boolean).length;
+    const pref = (label, key, ph) => `<label class="field">${label}<input type="text" data-pref="${key}" value="${esc(pf[key] || '')}" placeholder="${ph}"></label>`;
+    return `
+      <div class="prof-top">
+        <section class="panel prof-id">
+          <div class="idcard" aria-label="Universal CV ID card">
+            <div class="idcard-top"><span>Universal CV ID</span><span>Professional</span></div>
+            <div class="idcard-body"><div class="idcard-photo" aria-hidden="true">${esc(initials)}</div>
+              <div style="min-width:0"><div class="idcard-name">${esc(b.name || 'Your name')}</div><div class="idcard-label">${esc(b.label || 'Your title')}</div><div class="idcard-id">${esc(store.id)}</div></div></div>
+            <div class="idcard-mrz" aria-hidden="true">${esc(l1)}\n${esc(l2)}</div>
+          </div>
+          <div class="row" style="margin-top:.9rem"><button class="btn btn-sm btn-primary" data-action="copy-id">Copy ID</button><button class="btn btn-sm" data-action="open-version" data-vid="${active().vid}">Open my CV</button></div>
+          <p class="hint" style="margin-top:.7rem">One ID across every CV you make. Details are self-declared; verification is on the roadmap.</p>
+        </section>
+        <section class="panel">
+          <h2>Profile strength</h2>
+          <div class="score" style="margin:.4rem 0 1rem"><div class="ring big" style="--v:${done * 10};--c:${ringColor(done * 10)}"><span>${done * 10}</span></div>
+            <p class="hint">${done >= 10 ? 'Your profile is complete.' : 'A fuller profile gives every CV more to draw on.'}</p></div>
+          <div class="cat-row" style="margin-top:0">
+            ${[[m.work.length, 'Roles'], [m.education.length, 'Qualifications'], [m.skills.length, 'Skills'], [m.projects.length, 'Projects'], [m.certificates.length, 'Certifications']].map(([n, l]) => `<div class="cat"><b>${n}</b><span>${l}</span></div>`).join('')}
+          </div>
+        </section>
+      </div>
+      <section class="panel">
+        <h2>About you</h2>
+        <p class="sub">Used on every CV. Change it once here and all your CVs update.</p>
+        <div class="stack">
+          <div class="grid-2">${field('Full name', 'm', 'basics.name', mb.name)}${field('Email', 'm', 'basics.email', mb.email, 'email')}</div>
+          <div class="grid-2">${field('Phone', 'm', 'basics.phone', mb.phone, 'tel')}${field('Location', 'm', 'basics.location', mb.location)}</div>
+          ${field('LinkedIn or website', 'm', 'basics.url', mb.url)}
+        </div>
+      </section>
+      <section class="panel">
+        <h2>What you are looking for</h2>
+        <p class="sub">Kept on this device to guide your search. It is never added to a CV or a shared link.</p>
+        <div class="stack">
+          <div class="grid-2">${pref('Target roles', 'roles', 'e.g. Senior Product Designer')}${pref('Locations', 'locations', 'e.g. Dublin, remote')}</div>
+          <div class="grid-3">
+            <label class="field">Way of working<select data-pref="workStyle">${['', 'Remote', 'Hybrid', 'On site', 'Any'].map(o => `<option ${o === (pf.workStyle || '') ? 'selected' : ''} value="${o}">${o || 'Not set'}</option>`).join('')}</select></label>
+            ${pref('Salary goal', 'salary', 'Optional')}
+            <label class="field">Applications per week<input type="number" min="0" max="50" data-pref="weeklyGoal" value="${esc(pf.weeklyGoal || '')}" placeholder="e.g. 5"></label>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:.7rem">Set a weekly number and the Applications tab shows your progress against it.</p>
+      </section>
+      <section class="panel">
+        <h2>Credentials <span class="tag tag-soon" style="margin-left:.4rem;vertical-align:middle">Coming soon</span></h2>
+        <p class="sub" style="margin:0">Backing for your education, employment, certifications and professional registrations. Nothing here is live yet.</p>
+      </section>
+      ${importPanel()}
+      <p class="hint"><a href="privacy.html">How your data is handled</a></p>`;
+  }
+  function nextBar() {
+    const n = { edit: ['design', 'Choose a design'], design: ['match', 'Tailor this CV to a job'], match: ['score', 'Run the CV checks'], score: ['share', 'Download and apply'], letter: ['share', 'Download and apply'], share: ['tracker', 'Track this application'], versions: ['edit', 'Back to the CV'] }[tab];
+    if (!n) return '';
+    return `<div class="nextbar"><span class="eyebrow">Next</span><button class="btn btn-primary" data-tab="${n[0]}">${n[1]} →</button>${tab === 'score' ? '<button class="btn btn-ghost btn-sm" data-tab="letter">Add a cover letter first</button>' : ''}</div>`;
+  }
   function renderEdit() {
-    const m = store.master, v = active(), b = m.basics;
+    const m = store.master, v = active(), b = m.basics, sel = selection(v);
     const banners = `${importNote ? `<div class="banner info"><span>Imported. Importing is a best guess, so check each section, especially job titles and dates.</span><button class="btn btn-sm" data-action="dismiss-import">Got it</button></div>` : ''}`;
     return `${banners}
-      ${groupShell('version', `This version: ${esc(v.name)}`, null, `
-        <p class="hint">Your title and profile are saved per version, so you can tailor them for each job. Everything below is your master CV: tick what this version shows.</p>
+      <section class="ver-banner">
+        <div><span class="eyebrow">Current version</span><h2>${esc(v.name)}</h2>
+          <p>${sel.bulletsShown} of ${sel.bullets} achievements and ${sel.skillsShown} of ${sel.skills} skills selected</p></div>
+        <button class="btn btn-sm" data-tab="home">Back to dashboard</button>
+      </section>
+      ${groupShell('version', 'Title and profile for this version', null, `
+        <p class="hint">These two are saved for this version only, so you can reword them for each job.</p>
         ${field('Professional title', 'v', 'label', v.label)}
         ${field('Profile', 'v', 'summary', v.summary, 'textarea', ' <span class="hint">2–4 sentences</span>')}`)}
+      <div class="master-head"><span class="eyebrow">Master CV</span><h2>Everything about your career lives here</h2>
+        <p>Tick what the current version shows. Anything unticked stays stored for your other versions.</p></div>
       ${groupShell('basics', 'Personal details', null, `
         <div class="grid-2">${field('Full name', 'm', 'basics.name', b.name)}${field('Email', 'm', 'basics.email', b.email, 'email')}</div>
         <div class="grid-2">${field('Phone', 'm', 'basics.phone', b.phone, 'tel')}${field('Location', 'm', 'basics.location', b.location)}</div>
@@ -388,29 +596,32 @@
       </section>`;
   }
 
-  function renderVersions() {
-    const m = store.master;
-    const bulletIds = m.work.flatMap(w => w.bullets.map(b => b.id));
-    return `
-      <section class="panel">
-        <h2>One ID, one master CV, many versions</h2>
-        <p class="sub">All versions share <span class="mono">${esc(store.id)}</span> and draw on the same master CV. Each one keeps its own title, profile, ticked items, design and cover letter.</p>
-        <div class="apps">${store.versions.map(v => {
-          const r = Object.assign(UCV.resolve(store, v), { jd: v.target.jd });
-          const mt = UCV.match(r.cv, v.target.jd);
-          const apps = store.applications.filter(a => a.vid === v.vid).length;
-          const shown = bulletIds.filter(id => !v.hidden.includes(id)).length;
-          return `
-          <div class="app-row">
-            <div class="top"><input type="text" value="${esc(v.name)}" data-rename="${v.vid}" aria-label="Version name" style="max-width:300px;font-weight:700">${v.vid === store.active ? '<span class="pill st-Applied">Open</span>' : ''}</div>
-            <div class="meta">${esc(v.label || 'No title yet')} · ${UCV.TEMPLATES.find(t => t.id === v.design.template).name} · ${shown} of ${bulletIds.length} bullets · updated ${new Date(v.updatedAt).toLocaleDateString()}${mt ? ` · ${mt.score}% match to ${esc(v.target.company || 'job')}` : ''}${apps ? ` · ${apps} application${apps > 1 ? 's' : ''}` : ''}</div>
+  function versionCards(stats) {
+    return `<div class="vgrid">${(stats || cvStats()).map(x => {
+      const v = x.v, open = v.vid === store.active;
+      const accent = v.design.template === 'plain' ? '#111111' : (v.design.accent || '#2446C7');
+      return `
+        <article class="vcard${open ? ' is-open' : ''}">
+          <button class="vthumb" data-action="open-version" data-vid="${v.vid}" style="--th:${esc(accent)}" aria-label="Open ${esc(v.name)}">${tplThumb(v.design.template)}${open ? '<span class="vnow">Last opened</span>' : ''}</button>
+          <div class="vbody">
+            <input type="text" value="${esc(v.name)}" data-rename="${v.vid}" aria-label="CV name" title="Click to rename">
+            <p class="meta">${esc(v.label || 'No title yet')} · updated ${new Date(v.updatedAt).toLocaleDateString()}</p>
+            <div class="vstats"><span><b>${x.score}</b> score</span><span><b>${x.match == null ? '–' : x.match + '%'}</b> match</span><span><b>${x.sent}</b> sent</span></div>
             <div class="ctrls">
-              ${v.vid !== store.active ? `<button class="btn btn-sm btn-primary" data-action="open-version" data-vid="${v.vid}">Open</button>` : ''}
+              <button class="btn btn-sm btn-primary" data-action="open-version" data-vid="${v.vid}">Open</button>
               <button class="btn btn-sm" data-action="dup-version" data-vid="${v.vid}">Duplicate</button>
               ${store.versions.length > 1 ? `<button class="btn btn-sm btn-danger" data-action="del-version" data-vid="${v.vid}">Delete</button>` : ''}
             </div>
-          </div>`;
-        }).join('')}</div>
+          </div>
+        </article>`;
+    }).join('')}</div>`;
+  }
+  function renderVersions() {
+    return `
+      <section class="panel">
+        <h2>Your CVs</h2>
+        <p class="sub">All of them share <span class="mono">${esc(store.id)}</span> and draw on the same master CV. Each keeps its own title, profile, ticked items, design and cover letter.</p>
+        ${versionCards()}
       </section>`;
   }
 
@@ -427,9 +638,7 @@
       </section>`;
   }
   function renderShare() {
-    const r = res(), b = r.cv.basics;
-    const [l1, l2] = UCV.mrz(store.id, b.name, b.label);
-    const initials = (b.name || '?').split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+    const r = res();
     return `
       <section class="panel">
         <h2>Download</h2>
@@ -442,17 +651,6 @@
           <button class="btn" data-action="copy-json">Copy JSON</button>
         </div>
         <p class="hint" style="margin-top:.6rem">${onOwnSite ? 'Download PDF opens your browser\'s print window: choose “Save as PDF” as the printer.' : 'Downloads are switched off in this preview window. They work on your published site.'}</p>
-      </section>
-      <section class="panel">
-        <h2>Your Universal CV ID</h2>
-        <p class="sub">This ID stays the same across every version and every update.</p>
-        <div class="idcard" aria-label="Universal CV ID card">
-          <div class="idcard-top"><span>Universal CV ID</span><span>Professional</span></div>
-          <div class="idcard-body"><div class="idcard-photo" aria-hidden="true">${esc(initials)}</div>
-            <div style="min-width:0"><div class="idcard-name">${esc(b.name || 'Your name')}</div><div class="idcard-label">${esc(b.label || 'Your title')}</div><div class="idcard-id">${esc(store.id)}</div></div></div>
-          <div class="idcard-mrz" aria-hidden="true">${esc(l1)}\n${esc(l2)}</div>
-        </div>
-        <p class="hint" style="margin-top:.7rem">The card is a design, not an official document. Details on it are self-declared; verification is on the roadmap.</p>
       </section>
       <section class="panel">
         <h2>Share</h2>
@@ -468,39 +666,78 @@
           </div>
           <div class="stack" style="justify-items:center"><div class="qr" id="qr" aria-label="QR code for your contact card"></div><span class="hint">For business cards and badges</span></div>
         </div>
-      </section>
-      ${importPanel()}`;
+      </section>`;
   }
 
+  let appFilter = 'All', appOpen = null, appAdding = false;
+  // After a download or a copied link, offer to log the application (once per CV per visit).
+  const logAsked = new Set();
+  function offerLog() {
+    const v = active(), t = v.target;
+    if (isDash(tab) || logAsked.has(v.vid)) return;
+    if (t.company && store.applications.some(a => a.vid === v.vid && a.company === t.company)) return;
+    logAsked.add(v.vid);
+    let el = $('#logPrompt');
+    if (!el) { el = document.createElement('div'); el.id = 'logPrompt'; el.className = 'log-prompt'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', 'Log this application'); document.body.appendChild(el); }
+    el.innerHTML = `<form id="logForm"><div><b>Sending this CV to an employer?</b><span>Log it now so you know which CV went where.</span></div>
+      <div class="row"><input name="role" type="text" placeholder="Role" aria-label="Role" value="${esc(t.role)}" required><input name="company" type="text" placeholder="Company" aria-label="Company" value="${esc(t.company)}" required>
+      <button class="btn btn-primary" type="submit">Log application</button><button class="btn" type="button" data-action="log-dismiss">Not now</button></div></form>`;
+    el.hidden = false;
+  }
   function renderTracker() {
-    const counts = Object.fromEntries(UCV.STATUSES.map(s => [s, store.applications.filter(a => a.status === s).length]));
+    const all = store.applications, today = new Date().toISOString().slice(0, 10);
+    const count = st => st === 'All' ? all.length : all.filter(a => a.status === st).length;
     const verOpts = sel => store.versions.map(v => `<option value="${v.vid}" ${v.vid === sel ? 'selected' : ''}>${esc(v.name)}</option>`).join('');
-    const apps = store.applications.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const apps = all.filter(a => appFilter === 'All' || a.status === appFilter).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const goal = +((store.prefs || {}).weeklyGoal) || 0;
+    const weekAgo = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+    const thisWeek = all.filter(a => a.status !== 'Saved' && a.date && a.date >= weekAgo && a.date <= today).length;
+    const due = a => a.followUp && a.followUp <= today && (a.status === 'Applied' || a.status === 'Interview');
+    const dueCount = all.filter(due).length;
     return `
       <section class="panel">
-        <h2>Applications</h2><p class="sub">Keep track of where you applied and which version of your CV you sent.</p>
-        <div class="pipeline">${UCV.STATUSES.map(s => `<div class="pipe"><b>${counts[s]}</b><span class="pill st-${s}">${s}</span></div>`).join('')}</div>
+        <div class="trk-top">
+          <div><h2>Applications</h2><p class="sub" style="margin:0">Every job you are going for, which CV you sent, and what happens next.</p></div>
+          <button class="btn btn-primary" data-action="app-add">${appAdding ? 'Close' : '+ Add application'}</button>
+        </div>
+        <div class="trk-filters" role="group" aria-label="Filter by stage">${['All', ...UCV.STATUSES].map(st => `<button class="trk-f f-${st}" data-action="app-filter" data-st="${st}" aria-pressed="${appFilter === st}"><b>${count(st)}</b><span>${st}</span></button>`).join('')}</div>
+        ${goal || dueCount ? `<div class="trk-notes">
+          ${goal ? `<div class="trk-goal"><span>This week: <b>${thisWeek} of ${goal}</b> applications sent</span><div class="bar"><i style="width:${Math.min(100, thisWeek / goal * 100)}%"></i></div></div>` : ''}
+          ${dueCount ? `<span class="pill st-Interview">${dueCount} follow-up${dueCount > 1 ? 's' : ''} due</span>` : ''}</div>` : ''}
       </section>
-      <section class="panel">
+      ${appAdding ? `<section class="panel">
         <h2>Add an application</h2>
         <form id="appForm" class="stack" style="margin-top:.6rem">
-          <div class="grid-2"><label class="field" for="a-company">Company<input id="a-company" name="company" type="text" required></label><label class="field" for="a-role">Role<input id="a-role" name="role" type="text" required></label></div>
-          <div class="grid-2"><label class="field" for="a-vid">CV version sent<select id="a-vid" name="vid">${verOpts(store.active)}</select></label><label class="field" for="a-date">Date<input id="a-date" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}"></label></div>
+          <div class="grid-2"><label class="field" for="a-role">Role<input id="a-role" name="role" type="text" required></label><label class="field" for="a-company">Company<input id="a-company" name="company" type="text" required></label></div>
+          <div class="grid-3"><label class="field" for="a-vid">CV sent<select id="a-vid" name="vid">${verOpts(store.active)}</select></label><label class="field" for="a-status">Stage<select id="a-status" name="status">${UCV.STATUSES.map(st => `<option ${st === 'Applied' ? 'selected' : ''}>${st}</option>`).join('')}</select></label><label class="field" for="a-date">Date<input id="a-date" name="date" type="date" value="${today}"></label></div>
           <label class="field" for="a-url">Job link <span class="hint">optional</span><input id="a-url" name="url" type="url"></label>
-          <div><button class="btn btn-primary" type="submit">Add application</button></div>
+          <div class="row"><button class="btn btn-primary" type="submit">Add application</button><button class="btn" type="button" data-action="app-add">Cancel</button></div>
         </form>
-      </section>
-      <section class="apps">${apps.length ? apps.map(a => `
-        <div class="app-row">
-          <div class="top"><span class="who">${esc(a.company)}</span><span class="meta">${esc(a.role)}</span><span class="spacer"></span><span class="pill st-${a.status}">${a.status}</span></div>
-          <div class="meta">${a.date ? new Date(a.date + 'T00:00').toLocaleDateString() : 'No date'}${UCV.safeUrl(a.url) ? ` · <a href="${esc(UCV.safeUrl(a.url))}" target="_blank" rel="noopener noreferrer">Job advert</a>` : ''}</div>
-          <div class="ctrls">
-            <select data-app="${a.aid}" data-field="status" aria-label="Status">${UCV.STATUSES.map(s => `<option ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}</select>
-            <select data-app="${a.aid}" data-field="vid" aria-label="CV version">${verOpts(a.vid)}</select>
-            <input type="text" data-app="${a.aid}" data-field="notes" value="${esc(a.notes)}" placeholder="Notes" aria-label="Notes" style="flex:1;min-width:160px;padding:.35rem .5rem;font-size:13px">
-            <button class="btn btn-sm btn-danger" data-action="del-app" data-aid="${a.aid}">Delete</button>
+      </section>` : ''}
+      <section class="panel trk">
+        ${apps.length ? `<div class="trk-row trk-headrow" aria-hidden="true"><span>Role</span><span>CV sent</span><span>Stage</span><span>Applied</span><span>Follow up</span><span>Interest</span><span></span></div>` : ''}
+        <div class="apps">${apps.length ? apps.map(a => `
+        <div class="app-row${appOpen === a.aid ? ' is-open' : ''}">
+          <div class="trk-row">
+            <button class="trk-main" data-action="app-open" data-aid="${a.aid}" aria-expanded="${appOpen === a.aid}"><b>${esc(a.role)}</b><span>${esc(a.company)}${a.location ? ' · ' + esc(a.location) : ''}</span>${due(a) ? '<em>Follow up due</em>' : ''}</button>
+            <select data-app="${a.aid}" data-field="vid" aria-label="CV sent">${verOpts(a.vid)}</select>
+            <select class="st-sel st-${a.status}" data-app="${a.aid}" data-field="status" aria-label="Stage">${UCV.STATUSES.map(st => `<option ${st === a.status ? 'selected' : ''}>${st}</option>`).join('')}</select>
+            <input type="date" data-app="${a.aid}" data-field="date" value="${esc(a.date || '')}" aria-label="Date applied">
+            <input type="date" data-app="${a.aid}" data-field="followUp" value="${esc(a.followUp || '')}" aria-label="Follow-up date">
+            <span class="stars" role="group" aria-label="Interest, ${+a.excitement || 0} of 5">${[1, 2, 3, 4, 5].map(n => `<button data-action="app-star" data-aid="${a.aid}" data-n="${n}" class="${n <= (+a.excitement || 0) ? 'on' : ''}" aria-label="${n} of 5">★</button>`).join('')}</span>
+            <button class="icon-btn" data-action="app-open" data-aid="${a.aid}" aria-label="${appOpen === a.aid ? 'Hide' : 'Show'} details">${appOpen === a.aid ? '–' : '+'}</button>
           </div>
-        </div>`).join('') : '<p class="empty">No applications yet.</p>'}
+          ${appOpen === a.aid ? `<div class="trk-detail">
+            <div class="grid-3">
+              <label class="field">Location<input type="text" data-app="${a.aid}" data-field="location" value="${esc(a.location || '')}" placeholder="City or remote"></label>
+              <label class="field">Salary<input type="text" data-app="${a.aid}" data-field="salary" value="${esc(a.salary || '')}" placeholder="As advertised"></label>
+              <label class="field">Contact<input type="text" data-app="${a.aid}" data-field="contact" value="${esc(a.contact || '')}" placeholder="Recruiter name or email"></label>
+            </div>
+            <label class="field">Job link<div class="linkbox"><input type="url" data-app="${a.aid}" data-field="url" value="${esc(a.url || '')}" placeholder="https://">${UCV.safeUrl(a.url) ? `<a class="btn" href="${esc(UCV.safeUrl(a.url))}" target="_blank" rel="noopener noreferrer">Open</a>` : ''}</div></label>
+            <label class="field">Notes<textarea rows="3" data-app="${a.aid}" data-field="notes" placeholder="Interview dates, who you spoke to, what to follow up on">${esc(a.notes || '')}</textarea></label>
+            <div class="row"><button class="btn btn-sm" data-action="open-version" data-vid="${esc(a.vid)}">Open the CV sent</button><span class="spacer"></span><button class="btn btn-sm btn-danger" data-action="del-app" data-aid="${a.aid}">Delete</button></div>
+          </div>` : ''}
+        </div>`).join('') : `<p class="empty">${all.length ? 'Nothing at this stage.' : 'No applications yet. Add one here, or use “Add to tracker” in a CV’s Job match step.'}</p>`}</div>
       </section>`;
   }
 
@@ -510,13 +747,13 @@
   function renderPanel() {
     const panel = $('#panel');
     if (store.isNew) { panel.innerHTML = renderStart(); return; }
-    const html = { edit: renderEdit, design: renderDesign, score: renderScore, match: renderMatch, letter: renderLetterTab, versions: renderVersions, share: renderShare, tracker: renderTracker }[tab]();
-    panel.innerHTML = pendingBanner() + html;
-    panel.setAttribute('aria-labelledby', 'tab-' + tab);
+    const html = { home: renderHome, profile: renderProfile, edit: renderEdit, design: renderDesign, score: renderScore, match: renderMatch, letter: renderLetterTab, versions: renderVersions, share: renderShare, tracker: renderTracker }[tab]();
+    panel.innerHTML = pendingBanner() + html + nextBar();
+    panel.setAttribute('aria-labelledby', 'tab-' + (tab === 'versions' ? 'home' : tab));
     if (tab === 'share') renderQR();
     $$('textarea[data-bullet]', panel).forEach(autosize);
   }
-  function renderAll() { document.body.classList.toggle('is-start', !!store.isNew); renderPanel(); renderPreview(); renderBar(); }
+  function renderAll() { document.body.classList.toggle('is-start', !!store.isNew); document.body.classList.toggle('mode-dash', isDash(tab)); renderPanel(); renderPreview(); renderBar(); }
   function autosize(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight + 2) + 'px'; }
   function renderQR() {
     const el = $('#qr');
@@ -673,24 +910,29 @@
     const tabBtn = e.target.closest('[data-tab]');
     if (tabBtn) {
       const was = tab; tab = tabBtn.dataset.tab;
+      if (document.body.classList.contains('panel-off')) { document.body.classList.remove('panel-off'); const pb = $('[data-action="toggle-panel"]'); if (pb) pb.textContent = 'Hide panel'; }
+      if (tab === 'design' && !(store.journey || {}).design) { (store.journey = store.journey || {}).design = true; persist(); }
       try { history.replaceState(null, '', '#' + tab); } catch (_) {}
       renderPanel(); if (was === 'letter' || tab === 'letter') renderPreview(); renderBar();
       if (isPhone()) {
         document.body.classList.remove('show-preview'); syncPreviewBtn(); window.scrollTo(0, 0);
-        const cur = $('#tab-' + tab), bar = $('#tabs');
-        if (cur) bar.scrollLeft = cur.offsetLeft - (bar.clientWidth - cur.offsetWidth) / 2;
-      } else $('#panel').scrollIntoView({ block: 'nearest' });
+
+      } else window.scrollTo(0, 0);
+      fitPaper();
       return;
     }
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const v = active(), m = store.master, a = btn.dataset.action;
+    if (['print', 'docx', 'pdf', 'copy', 'export-json'].includes(a) && !(store.journey || {}).exported) { (store.journey = store.journey || {}).exported = true; persist(); }
+    if (['print', 'docx', 'pdf', 'copy', 'download-main'].includes(a)) setTimeout(offerLog, 700);
     const i = +btn.dataset.i;
     const redraw = () => { persist(); renderPanel(); renderPreview(); renderBar(); };
 
     switch (a) {
       case 'start-blank': store = UCV.freshStore(false); store.isNew = false; UCV.save(store); tab = 'edit'; renderAll(); toast('Blank CV ready. Your ID is ' + store.id); break;
-      case 'start-example': store.isNew = false; persist(); renderAll(); break;
+      case 'start-example': store.isNew = false; persist(); tab = 'home'; renderAll(); break;
+      case 'toggle-panel': document.body.classList.toggle('panel-off'); btn.textContent = document.body.classList.contains('panel-off') ? 'Show panel' : 'Hide panel'; fitPaper(); break;
       case 'toggle-preview': document.body.classList.toggle('show-preview'); syncPreviewBtn(); fitPaper(); window.scrollTo(0, 0); break;
       case 'restart': armed(btn, 'Click again to start over', () => { store = UCV.freshStore(true); UCV.save(store); tab = 'edit'; importNote = false; renderAll(); }); break;
       case 'dismiss-import': importNote = false; renderPanel(); break;
@@ -768,7 +1010,7 @@
       case 'copy-letter': copy(UCV.letterText(res(), v), 'Letter copied'); break;
       case 'docx-letter': exportDocx(true); break;
       case 'docx': exportDocx(false); break;
-      case 'open-version': store.active = btn.dataset.vid; tab = 'edit'; persist(); renderAll(); break;
+      case 'open-version': store.active = btn.dataset.vid; tab = 'edit'; persist(); document.body.classList.remove('show-preview'); syncPreviewBtn(); renderAll(); window.scrollTo(0, 0); try { history.replaceState(null, '', '#edit'); } catch (_) {} break;
       case 'dup-version': case 'new-version': {
         const src = a === 'new-version' ? v : store.versions.find(x => x.vid === btn.dataset.vid);
         const nv = UCV.clone(src); nv.vid = UCV.uid('v'); nv.updatedAt = new Date().toISOString();
@@ -796,6 +1038,13 @@
       case 'print': print(); break;
       case 'export-json': download(UCV.fileStem(store, res()) + '.json', JSON.stringify(UCV.toJSONResume(store, res()), null, 2), 'application/json'); break;
       case 'copy-json': copy(JSON.stringify(UCV.toJSONResume(store, res()), null, 2), 'JSON copied'); break;
+      case 'app-add': appAdding = !appAdding; renderPanel(); if (appAdding) { const f = $('#a-role'); if (f) f.focus(); } break;
+      case 'app-add-go': appAdding = true; appFilter = 'All'; tab = 'tracker'; renderAll(); window.scrollTo(0, 0); { const f = $('#a-role'); if (f) f.focus(); } break;
+      case 'app-goto': appOpen = btn.dataset.aid; appFilter = 'All'; appAdding = false; tab = 'tracker'; renderAll(); { const r = $('.app-row.is-open'); if (r) r.scrollIntoView({ block: 'center' }); } break;
+      case 'log-dismiss': { const lp = $('#logPrompt'); if (lp) lp.hidden = true; break; }
+      case 'app-filter': appFilter = btn.dataset.st; renderPanel(); break;
+      case 'app-open': appOpen = appOpen === btn.dataset.aid ? null : btn.dataset.aid; renderPanel(); break;
+      case 'app-star': { const ap = store.applications.find(x => x.aid === btn.dataset.aid); ap.excitement = +ap.excitement === +btn.dataset.n ? 0 : +btn.dataset.n; UCV.save(store); renderPanel(); break; }
       case 'del-app': armed(btn, 'Click again', () => { store.applications = store.applications.filter(x => x.aid !== btn.dataset.aid); persist(); renderBar(); renderPanel(); }); break;
       case 'theme': {
         const root = document.documentElement;
@@ -822,7 +1071,9 @@
     else if (d.rename) {
       store.versions.find(x => x.vid === d.rename).name = t.value || 'Untitled'; UCV.save(store);
       $('#versionSelect').innerHTML = store.versions.map(x => `<option value="${x.vid}" ${x.vid === store.active ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
-    } else if (d.app && t.tagName === 'INPUT') { store.applications.find(x => x.aid === d.app)[d.field] = t.value; UCV.save(store); }
+      $('#verName').textContent = active().name;
+    } else if (d.app && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) { store.applications.find(x => x.aid === d.app)[d.field] = t.value; UCV.save(store); }
+    else if (d.pref && t.tagName !== 'SELECT') { (store.prefs = store.prefs || {})[d.pref] = t.value; UCV.save(store); }
   });
 
   document.addEventListener('change', e => {
@@ -833,7 +1084,9 @@
     if (d.sec) { v.hiddenSections = t.checked ? v.hiddenSections.filter(k => k !== d.sec) : [...v.hiddenSections, d.sec]; persist(); renderPanel(); renderPreview(); renderBar(); return; }
     if (d.dbool) { v.design[d.dbool] = t.checked; persist(); renderPreview(); renderBar(); return; }
     if (d.d && t.tagName === 'SELECT') { v.design[d.d] = t.value; persist(); renderPreview(); return; }
-    if (d.app && t.tagName === 'SELECT') { store.applications.find(x => x.aid === d.app)[d.field] = t.value; UCV.save(store); if (d.field === 'status') renderPanel(); return; }
+    if (d.app && t.tagName === 'SELECT') { store.applications.find(x => x.aid === d.app)[d.field] = t.value; UCV.save(store); if (d.field === 'status') { renderPanel(); renderBar(); } return; }
+    if (d.app && t.type === 'date') { renderPanel(); return; }
+    if (d.pref && t.tagName === 'SELECT') { (store.prefs = store.prefs || {})[d.pref] = t.value; UCV.save(store); return; }
     if ('import' in d && t.files[0]) { importFile(t.files[0]); t.value = ''; return; }
     if (t.id === 'photoFile' && t.files[0]) setPhoto(t.files[0]);
   });
@@ -876,11 +1129,18 @@
     if (g.open) $$('textarea[data-bullet]', g).forEach(autosize);
   }, true);
   document.addEventListener('submit', e => {
+    if (e.target.id === 'logForm') {
+      e.preventDefault();
+      const lf = new FormData(e.target);
+      store.applications.push({ aid: UCV.uid('a'), company: lf.get('company').trim(), role: lf.get('role').trim(), vid: store.active, status: 'Applied', date: new Date().toISOString().slice(0, 10), url: '', notes: '' });
+      persist(); renderBar(); $('#logPrompt').hidden = true; toast('Logged. Find it under Applications on your dashboard.');
+      return;
+    }
     if (e.target.id !== 'appForm') return;
     e.preventDefault();
     const f = new FormData(e.target);
-    store.applications.push({ aid: UCV.uid('a'), company: f.get('company').trim(), role: f.get('role').trim(), vid: f.get('vid'), status: 'Applied', date: f.get('date'), url: UCV.safeUrl(f.get('url')), notes: '' });
-    persist(); renderBar(); renderPanel(); toast('Application added');
+    store.applications.push({ aid: UCV.uid('a'), company: f.get('company').trim(), role: f.get('role').trim(), vid: f.get('vid'), status: f.get('status') || 'Applied', date: f.get('date'), url: UCV.safeUrl(f.get('url')), notes: '' });
+    appAdding = false; appFilter = 'All'; persist(); renderBar(); renderPanel(); toast('Application added');
   });
 
   // drag to reorder: bullets, and sections on the Design tab
@@ -922,7 +1182,8 @@
   // ---------- boot ----------
   try { const th = localStorage.getItem('ucvid:theme'); if (th) document.documentElement.dataset.theme = th; } catch (_) {}
   const h = location.hash.replace('#', '');
-  if (TABS.some(([id]) => id === h)) { tab = h; if (store.isNew && h !== 'edit') store.isNew = false; }
+  if (ALL_TABS.includes(h)) { tab = h; if (store.isNew && h !== 'edit') store.isNew = false; }
+  else if (!store.isNew) tab = 'home';
   renderAll();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { renderPreview(); renderBar(); });
 })();

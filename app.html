@@ -6,12 +6,12 @@
 <meta name="referrer" content="no-referrer">
 <title>Universal CV ID Studio</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<script src="assets/boot.js?v=6"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=6">
-<link rel="stylesheet" href="assets/styles.css?v=6">
-<script src="assets/vendor/lz-string.min.js?v=6"></script>
-<script src="assets/vendor/qrcode.min.js?v=6"></script>
-<script src="assets/vendor/jspdf.umd.min.js?v=6"></script>
+<script src="assets/boot.js?v=11"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=11">
+<link rel="stylesheet" href="assets/styles.css?v=11">
+<script src="assets/vendor/lz-string.min.js?v=11"></script>
+<script src="assets/vendor/qrcode.min.js?v=11"></script>
+<script src="assets/vendor/jspdf.umd.min.js?v=11"></script>
 </head>
 <body>
   <header class="app-bar">
@@ -21,13 +21,13 @@
       <span class="save-state" id="saveState" aria-live="polite">Saved</span>
       <span class="spacer"></span>
       <div class="version-picker">
-        <label for="versionSelect" class="eyebrow">Version</label>
-        <select id="versionSelect"></select>
-        <button class="btn btn-sm" data-action="new-version" title="Copy this version into a new one">+ New</button>
+        <button class="ver-chip" data-tab="home" title="Back to the dashboard"><span class="sw">← Dashboard</span><span class="eyebrow">Editing</span><b id="verName">Main CV</b></button>
+        <select id="versionSelect" class="sr" tabindex="-1" aria-hidden="true"></select>
       </div>
-      <button class="btn btn-ghost btn-sm" data-action="theme" aria-label="Switch light or dark mode">◐</button>
+      <button class="theme-btn" data-action="theme" aria-label="Switch light or dark mode" title="Light or dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/></svg></button>
     </div>
-    <nav class="tabs" id="tabs" role="tablist" aria-label="Sections"></nav>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Main"></nav>
+    <nav class="subtabs" id="subtabs" role="tablist" aria-label="In this area" hidden></nav>
   </header>
 
   <div class="workspace">
@@ -36,7 +36,7 @@
     <aside class="preview-col" aria-label="Live preview">
       <div class="preview-bar">
         <span class="eyebrow" id="pageCount">Live preview · A4</span>
-        <button class="btn btn-sm" data-tab="design">Design</button>
+        <button class="btn btn-sm panel-toggle" data-action="toggle-panel">Hide panel</button>
         <button class="btn btn-sm btn-primary" data-action="download-main">Download PDF</button>
       </div>
       <div class="paper-wrap" id="paperWrap"><div class="paper-scale" id="paper"></div></div>
@@ -47,7 +47,7 @@
 
   <div class="toast-wrap" id="toasts" aria-live="polite"></div>
 
-  <script src="assets/cv.js?v=6"></script>
-  <script src="assets/app.js?v=6"></script>
+  <script src="assets/cv.js?v=11"></script>
+  <script src="assets/app.js?v=11"></script>
 </body>
 </html>
