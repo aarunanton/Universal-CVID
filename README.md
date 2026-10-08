@@ -4,7 +4,7 @@
 
 Import your CV or build it here, and get a permanent Universal CV ID (for example `#UCVID-K7Q4M`). Keep one master CV, tick what each job needs, check it against the advert, and send a matching PDF, Word file, link or QR code. Everything runs in the browser: no account, no server, no tracking.
 
-**Live site:** https://aarunanton.github.io/Universal-CVID/
+**Live site:** https://cvid.app
 
 ---
 
@@ -68,7 +68,7 @@ python -m http.server 8000
 ## Known limits
 
 - Data is stored per browser, unencrypted. Use an export or a share link to move a CV between devices.
-- On GitHub Pages, other projects under the same `github.io` account share browser storage with this one. A custom domain removes that.
+- The site runs on its own domain (cvid.app), so its browser storage is not shared with other projects.
 - Import is a best guess. Two-column CVs and scanned (image-only) PDFs import poorly; paste the text instead.
 - "Download PDF" uses the browser's print window (choose "Save as PDF").
 - Job match and the cover-letter draft are rule-based and run on your device. They do not use AI.
