@@ -17,6 +17,7 @@
   let tab = 'edit';
   let pages = 1;
   let pendingImport = null;
+  let review = null; // an import waiting to be checked: { cv, report, raw, name }
   let importNote = false;
   const openGroups = new Set(['version', 'basics', 'work', 'skills']);
   let storageWarned = false;
@@ -25,7 +26,7 @@
   // Two places: the dashboard (everything across your CVs) and a CV workspace (one CV, step by step).
   const DASH_TABS = [['home', 'Dashboard'], ['tracker', 'Applications'], ['profile', 'Profile']];
   const CV_TABS = [['edit', 'Content'], ['design', 'Design'], ['match', 'Job match', 'Match'], ['score', 'CV check', 'Check'], ['letter', 'Cover letter', 'Letter'], ['share', 'Export']];
-  const ALL_TABS = DASH_TABS.concat(CV_TABS).map(t => t[0]).concat('versions');
+  const ALL_TABS = DASH_TABS.concat(CV_TABS).map(t => t[0]).concat('versions', 'import');
   const isDash = t => !CV_TABS.some(x => x[0] === t);
   const TAB_ICON = {
     home: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
@@ -333,7 +334,7 @@
         <div>
           <h2>${first ? esc(first) + '’s' : 'Your'} Universal CV</h2>
           <p>Everything across your CVs and applications, in one place.</p></div>
-        <div class="row"><button class="btn btn-primary" data-action="app-add-go">+ Add application</button><button class="btn dash-alt" data-action="new-version">+ New CV</button></div>
+        <div class="row"><button class="btn btn-primary" data-action="app-add-go">+ Add application</button><button class="btn dash-alt" data-action="new-version">+ New CV</button><button class="btn dash-alt" data-tab="import">Import a CV</button></div>
       </section>
       <div class="kpis five">
         <div class="kpi k-night"><b>${store.versions.length}</b><span>CV${store.versions.length === 1 ? '' : 's'}</span></div>
@@ -357,7 +358,7 @@
       <section class="panel">
         <h2>Your CVs</h2>
         <p class="sub">Click a CV to open it and work on its content, design, job match and export.</p>
-        ${versionCards(stats)}
+        ${versionCards(stats, true)}
       </section>`;
   }
   function renderProfile() {
@@ -587,7 +588,8 @@
       </section>`;
   }
 
-  function versionCards(stats) {
+  const IMPORT_IC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="M9 14l3 3 3-3"/></svg>';
+  function versionCards(stats, withImport) {
     return `<div class="vgrid">${(stats || cvStats()).map(x => {
       const v = x.v, open = v.vid === store.active;
       const accent = v.design.template === 'plain' ? '#111111' : (v.design.accent || '#2446C7');
@@ -605,7 +607,8 @@
             </div>
           </div>
         </article>`;
-    }).join('')}</div>`;
+    }).join('')}${withImport ? `
+        <button class="vimport" data-tab="import"><span class="vimport-ic">${IMPORT_IC}</span><b>Import an existing CV</b><span>Upload a PDF or Word file, or paste the text. You check every section before it is saved.</span></button>` : ''}</div>`;
   }
   function renderVersions() {
     return `
@@ -619,14 +622,97 @@
   function importPanel() {
     return `
       <section class="panel">
-        <h2>Import a CV</h2>
-        <p class="sub">Upload a PDF, Word (.docx), text or JSON Resume file. ${hasRealContent() ? 'This replaces your current CV content; your ID and tracker stay.' : 'We fill in the sections for you to check.'}</p>
-        <div class="stack">
-          <label class="field" for="importFile">From a file<input id="importFile" type="file" data-import accept=".pdf,.docx,.txt,.json,application/pdf"></label>
-          <label class="field" for="importText">Or paste the text<textarea id="importText" rows="4" placeholder="Paste the text of your CV"></textarea></label>
-          <div class="row"><button class="btn" data-action="import-text">Import pasted text</button><span class="spacer"></span><button class="btn btn-ghost btn-sm" data-action="restart">Start over</button></div>
-        </div>
+        <h2>Import or start over</h2>
+        <p class="sub">Bring in an existing CV, or clear everything on this device and begin again.</p>
+        <div class="row"><button class="btn" data-tab="import">Import a CV</button><span class="spacer"></span><button class="btn btn-ghost btn-sm" data-action="restart">Start over</button></div>
       </section>`;
+  }
+  // ---------- import: upload, then check what was found ----------
+  function renderImportTab() {
+    return `
+      <section class="panel imp">
+        <h2>Import a CV</h2>
+        <p class="sub">PDF, Word (.docx), text or JSON Resume. You check what we found before anything is saved.${hasRealContent() ? ' Importing replaces the content of your CVs; your applications stay.' : ''}</p>
+        <label class="imp-drop" for="importFile">
+          <span class="vimport-ic">${IMPORT_IC}</span>
+          <b>Choose a file</b><span>or drop it here</span>
+          <input id="importFile" type="file" data-import accept=".pdf,.docx,.txt,.json,application/pdf" class="sr">
+        </label>
+        <details class="paste"><summary>Or paste your CV as text</summary>
+          <div class="stack" style="margin-top:.6rem"><textarea id="importText" rows="6" placeholder="Paste the text of your CV here"></textarea>
+          <div><button class="btn" data-action="import-text">Import pasted text</button></div></div>
+        </details>
+        <p class="hint" style="margin-top:1rem"><a href="privacy.html">Your file is read in this browser and never uploaded.</a></p>
+      </section>`;
+  }
+  const ymLabel = ym => { if (!ym) return ''; const [y, m] = ym.split('-'); return (m ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m - 1] + ' ' : '') + y; };
+  const rvTag = (tone, text) => `<span class="rv-tag rv-${tone}">${text}</span>`;
+  function renderReview() {
+    const c = review.cv, r = review.report, b = c.basics;
+    const roleIssues = c.work.map(w => [!w.position && 'role title', !w.company && 'employer', !w.startDate && 'dates'].filter(Boolean));
+    const contactIssues = [!b.name && 'name', !b.email && 'email'].filter(Boolean);
+    const needs = roleIssues.filter(x => x.length).length + (contactIssues.length ? 1 : 0) + (c.work.length ? 0 : 1);
+    const plural = (n, one, many) => n === 1 ? one : many;
+    const fixes = [
+      [r.joined, plural(r.joined, 'line joined back into a full sentence. The PDF had wrapped it.', 'lines joined back into full sentences. The PDF had wrapped them.')],
+      [r.footers, plural(r.footers, 'page header or footer removed, such as page numbers.', 'page headers or footers removed, such as page numbers.')],
+      [r.skills, plural(r.skills, 'skill fragment joined back together.', 'skill fragments joined back together.')]
+    ].filter(f => f[0]);
+    const strip = [...fixes.map(f => `<div class="rv-fix"><b>${f[0]}</b><span>${f[1]}</span></div>`),
+      `<div class="rv-fix${needs ? ' rv-fix-need' : ''}"><b>${needs}</b><span>${needs ? plural(needs, 'thing needs you. It is marked below.', 'things need you. They are marked below.') : 'things need you. Everything we found looks complete.'}</span></div>`].join('');
+    const other = [[c.projects.length, 'Projects'], [c.certificates.length, 'Certifications'], [c.languages.length, 'Languages'], ...c.custom.map(x => [1, x.title])].filter(x => x[0]);
+    const secs = [
+      ['contact', 'Contact', contactIssues.length ? rvTag('need', 'Needs you') : rvTag('ok', 'Looks right')],
+      ['profile', 'Profile', b.summary ? rvTag('ok', 'Looks right') : rvTag('plain', 'Not found')],
+      ['exp', `Experience · ${c.work.length} role${c.work.length === 1 ? '' : 's'}`, !c.work.length || roleIssues.some(x => x.length) ? rvTag('need', 'Needs you') : r.joined ? rvTag('fixed', 'Fixed for you') : rvTag('ok', 'Looks right')],
+      ['edu', `Education · ${c.education.length}`, c.education.length ? rvTag('ok', 'Looks right') : rvTag('plain', 'Not found')],
+      ['skills', `Skills · ${c.skills.length}`, r.skills ? rvTag('fixed', 'Fixed for you') : c.skills.length ? rvTag('ok', 'Looks right') : rvTag('plain', 'Not found')],
+      ...(other.length ? [['other', 'Other sections · ' + other.length, rvTag('ok', 'Looks right')]] : [])
+    ];
+    const inp = (label, path, val, need, ph) => `<label class="field${need ? ' rv-need' : ''}">${label}<input type="text" data-rv="${path}" value="${esc(val || '')}" placeholder="${need ? esc(ph || 'We couldn’t find this. Please add it.') : ''}"></label>`;
+    const roles = c.work.map((w, i) => {
+      const iss = roleIssues[i];
+      return `<article class="rv-role${iss.length ? ' is-need' : ''}">
+        <div class="rv-role-head"><b>Role ${i + 1} of ${c.work.length}</b>${iss.length ? rvTag('need', 'Needs you: ' + iss.join(', ')) : ''}<span class="rv-dates">${w.startDate || w.endDate ? esc(ymLabel(w.startDate) || '?') + ' – ' + esc(ymLabel(w.endDate) || 'Present') : 'No dates found'}</span></div>
+        <div class="grid-2">${inp('Role title', `work.${i}.position`, w.position, !w.position, 'We couldn’t find a title. What was your role?')}${inp('Employer', `work.${i}.company`, w.company, !w.company)}</div>
+        ${w.highlights.length ? `<ul class="rv-bullets">${w.highlights.map(h => `<li>${esc(h)}</li>`).join('')}</ul>` : '<p class="hint">No bullet points found for this role.</p>'}
+      </article>`;
+    }).join('');
+    const rawHTML = review.raw ? (() => {
+      const gone = new Set(r.removed);
+      return esc(review.raw.replace(/\f/g, '')).split('\n').filter(l => l.trim()).map(l => gone.has(l.trim()) || gone.has(l.trim().replace(/\s{4,}/g, ' ')) ? `<del>${l}</del>` : l).join('\n');
+    })() : '';
+    const replacing = hasRealContent() && !store.isNew;
+    return `
+      <section class="rv-head">
+        <div><h2>Check what we found</h2>
+          <p class="sub">We read ${esc(review.name)} and split it into sections.${fixes.length ? ' A few things looked like PDF layout rather than content, so we fixed them.' : ''} Nothing is saved until you say so.</p></div>
+      </section>
+      <div class="rv-strip">${strip}</div>
+      <div class="rv-layout">
+        <nav class="rv-nav panel" aria-label="Sections found">${secs.map(x => `<button data-action="rv-jump" data-to="rv-${x[0]}"><span>${x[1]}</span>${x[2]}</button>`).join('')}</nav>
+        <div class="rv-main">
+          <section class="panel" id="rv-contact"><h2>Contact</h2>
+            <div class="stack">
+              <div class="grid-2">${inp('Full name', 'basics.name', b.name, !b.name)}${inp('Professional title', 'basics.label', b.label, false)}</div>
+              <div class="grid-2">${inp('Email', 'basics.email', b.email, !b.email)}${inp('Phone', 'basics.phone', b.phone, false)}</div>
+              ${inp('Location', 'basics.location', b.location, false)}
+            </div>
+          </section>
+          <section class="panel" id="rv-profile"><h2>Profile</h2>${b.summary ? `<p class="rv-text">${esc(b.summary)}</p>` : '<p class="hint">No profile or summary found. You can write one in the editor.</p>'}</section>
+          <section class="panel" id="rv-exp"><h2>Experience</h2><div class="stack">${roles || '<p class="hint rv-need-text">We couldn’t find any roles. Check the file has an “Experience” heading, or add roles in the editor.</p>'}</div></section>
+          <section class="panel" id="rv-edu"><h2>Education</h2>${c.education.length ? `<ul class="rv-list">${c.education.map(e => `<li><b>${esc(e.degree || 'Qualification')}</b>${e.institution ? ' · ' + esc(e.institution) : ''}${e.year ? ' · ' + esc(e.year) : ''}</li>`).join('')}</ul>` : '<p class="hint">No education found.</p>'}</section>
+          <section class="panel" id="rv-skills"><h2>Skills</h2>${c.skills.length ? `<div class="rv-chips">${c.skills.map((k, i) => `<span class="rv-chip">${esc(k)}<button data-action="rv-skill-del" data-i="${i}" aria-label="Remove ${esc(k)}">×</button></span>`).join('')}</div><p class="hint" style="margin-top:.6rem">Remove anything that isn’t a skill. You can add more in the editor.</p>` : '<p class="hint">No skills found.</p>'}</section>
+          ${other.length ? `<section class="panel" id="rv-other"><h2>Other sections</h2><ul class="rv-list">${other.map(o => `<li>${esc(o[1])}${o[1] === 'Projects' || o[1] === 'Certifications' || o[1] === 'Languages' ? ' · ' + o[0] : ''}</li>`).join('')}</ul></section>` : ''}
+          ${rawHTML ? `<details class="panel rv-raw"><summary>Show the text we read from your file</summary><p class="hint">Struck-through lines were page headers or footers, not part of your CV.</p><pre>${rawHTML}</pre></details>` : ''}
+          <div class="rv-actions">
+            <button class="btn btn-primary" data-action="rv-apply">${replacing ? 'Replace my CV content' : 'Looks right, open my CV'}</button>
+            <label class="btn" for="rvFile">Try a different file<input id="rvFile" type="file" data-import accept=".pdf,.docx,.txt,.json,application/pdf" class="sr"></label>
+            <button class="btn btn-ghost" data-action="rv-cancel">Cancel</button>
+            <span class="hint">${replacing ? 'This replaces the content of your CVs. Your applications stay.' : needs ? 'You can also fix anything later in the editor.' : ''}</span>
+          </div>
+        </div>
+      </div>`;
   }
   function renderShare() {
     const r = res();
@@ -736,8 +822,9 @@
   }
   function renderPanel() {
     const panel = $('#panel');
+    if (review) { panel.innerHTML = renderReview(); panel.removeAttribute('aria-labelledby'); return; }
     if (store.isNew) { panel.innerHTML = renderStart(); return; }
-    const html = { home: renderHome, profile: renderProfile, edit: renderEdit, design: renderDesign, score: renderScore, match: renderMatch, letter: renderLetterTab, versions: renderVersions, share: renderShare, tracker: renderTracker }[tab]();
+    const html = { import: renderImportTab, home: renderHome, profile: renderProfile, edit: renderEdit, design: renderDesign, score: renderScore, match: renderMatch, letter: renderLetterTab, versions: renderVersions, share: renderShare, tracker: renderTracker }[tab]();
     panel.innerHTML = pendingBanner() + html + nextBar();
     panel.setAttribute('aria-labelledby', 'tab-' + (tab === 'versions' ? 'home' : tab));
     if (tab === 'share') renderQR();
@@ -761,7 +848,11 @@
     lib.GlobalWorkerOptions.workerSrc = LIBS.pdfworker;
     const doc = await lib.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false }).promise;
     const out = [];
+    let joins = 0;
+    const RANGEISH = /\b(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?\d{4}\s*(?:-|–|—|to)\s*(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?(?:\d{4}|present|current|now)\b/i;
+    const DOT = /^[•\-*·▪◦●○■➢►✓]$/;
     for (let p = 1; p <= doc.numPages; p++) {
+      if (p > 1) out.push('\f');
       const content = await (await doc.getPage(p)).getTextContent();
       const rows = [];
       content.items.forEach(it => {
@@ -772,19 +863,35 @@
         row.parts.push({ x: it.transform[4], s: it.str, w: it.width || 0, h: Math.hypot(it.transform[0], it.transform[1]) || 10 });
       });
       rows.forEach(r => r.parts.sort((a, b) => a.x - b.x));
+      if (!rows.length) continue;
       const base = Math.min(...rows.map(r => r.parts[0].x)); // left margin of the page
+      const right = Math.max(...rows.map(r => { const l = r.parts[r.parts.length - 1]; return l.x + l.w; })); // right margin
+      let prev = null;
       rows.sort((a, b) => b.y - a.y).forEach(r => {
         let line = '', end = null;
         r.parts.forEach(pt => {
           if (end !== null) { const gap = pt.x - end; line += gap > pt.h * 1.1 ? '    ' : gap > pt.h * 0.22 && !/\s$/.test(line) && !/^\s/.test(pt.s) ? ' ' : ''; }
           line += pt.s; end = pt.x + pt.w;
         });
+        const x0 = r.parts[0].x, t = line.trim(), h = r.parts[0].h;
+        const textX = DOT.test(r.parts[0].s.trim()) && r.parts[1] ? r.parts[1].x : x0;
+        // a line the PDF wrapped: the line above ran to the right margin without ending its sentence, and this one starts at the same indent
+        const heading = t.length < 46 && t === t.toUpperCase() && /[A-Z]/.test(t);
+        if (prev && !heading && !/^[•\-*·▪◦●○■➢►✓]/.test(t) && !/ {4}/.test(line) && !/ {4}/.test(prev.line) && !/[.!?:]$/.test(prev.t)
+          && prev.end > right - Math.max(24, (right - base) * 0.09) && Math.abs(textX - prev.textX) < 6 && (prev.y - r.y) < h * 2
+          && prev.t.split(/\s+/).length >= 4 && !RANGEISH.test(t) && !RANGEISH.test(prev.t)) {
+          const merged = /[A-Za-z]-$/.test(prev.t) && /^[A-Za-z]/.test(t) ? prev.t + t : prev.t + ' ' + t;
+          out[out.length - 1] = out[out.length - 1].replace(prev.t, merged); joins++;
+          prev = { textX: prev.textX, end, y: r.y, t: merged, line: merged };
+          return;
+        }
         // browsers draw bullet dots as graphics, not text: recognise bullets by their indent instead
-        const x0 = r.parts[0].x, t = line.trim();
         if (x0 > base + 8 && x0 < base + 46 && /^[A-Z0-9"“(]/.test(t) && t.split(/\s+/).length >= 4 && !/^[•\-*·▪◦●○■➢►✓]/.test(t)) line = '• ' + t;
         out.push(line);
+        prev = { textX, end, y: r.y, t, line };
       });
     }
+    pdfText.joins = joins;
     return out.join('\n');
   }
   async function docxText(file) {
@@ -807,9 +914,10 @@
     toast('Reading your CV…');
     try {
       let cv;
+      let text = '';
+      pdfText.joins = 0;
       if (name.endsWith('.json')) cv = UCV.fromJSONResume(JSON.parse(await file.text()));
       else {
-        let text;
         if (name.endsWith('.pdf')) text = await pdfText(file);
         else if (name.endsWith('.docx')) text = await docxText(file);
         else if (name.endsWith('.doc')) throw new Error('Old .doc files can\'t be read. Save it as .docx or PDF and try again.');
@@ -817,8 +925,17 @@
         if (!text || text.replace(/\s/g, '').length < 40) throw new Error('No text found in that file. If it is a scanned image, paste the text instead.');
         cv = UCV.parseText(text);
       }
-      offerImport(cv);
+      startReview(cv, text, file.name, pdfText.joins || 0);
     } catch (e) { toast(e.message || 'Could not read that file.', true); }
+  }
+  function startReview(cv, raw, name, extraJoins) {
+    const report = Object.assign({ footers: 0, joined: 0, skills: 0, removed: [] }, cv.report || {});
+    report.joined += extraJoins || 0;
+    review = { cv: UCV.cleanCV(cv), report, raw: raw || '', name: name || 'your CV' };
+    tab = 'import';
+    try { history.replaceState(null, '', '#import'); } catch (_) {}
+    document.body.classList.remove('show-preview');
+    renderAll(); window.scrollTo(0, 0);
   }
   function offerImport(cv) {
     cv = UCV.cleanCV(cv);
@@ -926,12 +1043,21 @@
       case 'toggle-preview': document.body.classList.toggle('show-preview'); syncPreviewBtn(); fitPaper(); window.scrollTo(0, 0); break;
       case 'restart': armed(btn, 'Click again to start over', () => { store = UCV.freshStore(true); UCV.save(store); tab = 'edit'; importNote = false; renderAll(); }); break;
       case 'dismiss-import': importNote = false; renderPanel(); break;
+      case 'pv-size': setPreviewSize(btn.dataset.size, true); break;
+      case 'rv-jump': { const el = document.getElementById(btn.dataset.to); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
+      case 'rv-skill-del': review.cv.skills.splice(i, 1); renderPanel(); break;
+      case 'rv-cancel': review = null; tab = store.isNew ? 'edit' : 'home'; try { history.replaceState(null, '', store.isNew ? location.pathname : '#home'); } catch (_) {} renderAll(); window.scrollTo(0, 0); break;
+      case 'rv-apply': {
+        const go = () => { const cv = review.cv; review = null; applyImport(cv); window.scrollTo(0, 0); };
+        if (hasRealContent() && !store.isNew) armed(btn, 'Click again to replace', go); else go();
+        break;
+      }
       case 'confirm-import': applyImport(pendingImport); break;
       case 'cancel-import': pendingImport = null; renderPanel(); break;
       case 'import-text': {
         const text = $('#importText').value.trim();
         if (text.length < 40) { toast('Paste the text of your CV first.', true); return; }
-        try { offerImport(text.startsWith('{') ? UCV.fromJSONResume(JSON.parse(text)) : UCV.parseText(text)); } catch (err) { toast(err.message, true); }
+        try { startReview(text.startsWith('{') ? UCV.fromJSONResume(JSON.parse(text)) : UCV.parseText(text), text.startsWith('{') ? '' : text, 'the pasted text', 0); } catch (err) { toast(err.message, true); }
         break;
       }
       case 'toggle': toggleId(btn.dataset.id); redraw(); break;
@@ -1048,6 +1174,7 @@
 
   document.addEventListener('input', e => {
     const t = e.target, v = active(), d = t.dataset;
+    if (d.rv && review) { setPath(review.cv, d.rv, t.value); return; }
     if (d.m) {
       setPath(store.master, d.m, t.value);
       if (d.bullet) autosize(t);
@@ -1164,10 +1291,23 @@
   });
   document.addEventListener('dragend', () => { drag = null; $$('.dragging, .drop').forEach(x => x.classList.remove('dragging', 'drop')); });
   // dropping a CV file anywhere on the start screen imports it
-  document.addEventListener('dragover', e => { if (store.isNew && e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
-  document.addEventListener('drop', e => { if (store.isNew && e.dataTransfer && e.dataTransfer.files[0]) { e.preventDefault(); importFile(e.dataTransfer.files[0]); } });
+  const dropOK = () => store.isNew || (tab === 'import' && !review);
+  document.addEventListener('dragover', e => { if (dropOK() && e.dataTransfer && [...e.dataTransfer.types].includes('Files')) e.preventDefault(); });
+  document.addEventListener('drop', e => { if (dropOK() && e.dataTransfer && e.dataTransfer.files[0]) { e.preventDefault(); importFile(e.dataTransfer.files[0]); } });
 
   window.addEventListener('resize', () => debounce(fitPaper, 80));
+
+  // ---------- preview size in the CV workspace: small (default), large or hidden ----------
+  function setPreviewSize(size, save) {
+    if (!['small', 'large', 'hidden'].includes(size)) size = 'small';
+    ['small', 'large', 'hidden'].forEach(x => document.body.classList.toggle('pv-' + x, x === size));
+    $$('[data-action="pv-size"]').forEach(b => b.setAttribute('aria-pressed', b.dataset.size === size));
+    if (size !== 'large') document.body.classList.remove('panel-off');
+    if (save) { try { localStorage.setItem('ucvid:pv', size); } catch (_) {} }
+    fitPaper();
+  }
+  let pvStart = 'small';
+  try { pvStart = localStorage.getItem('ucvid:pv') || 'small'; } catch (_) {}
 
   // ---------- boot ----------
   try { const th = localStorage.getItem('ucvid:theme'); if (th) document.documentElement.dataset.theme = th; } catch (_) {}
@@ -1176,5 +1316,6 @@
   if (ALL_TABS.includes(h)) { tab = h; if (store.isNew && h !== 'edit') store.isNew = false; }
   else if (!store.isNew) tab = 'home';
   renderAll();
+  setPreviewSize(pvStart);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { renderPreview(); renderBar(); });
 })();

@@ -738,7 +738,11 @@
     let m = text.match(/^(.+?)\s+at\s+(.+)$/i) || text.match(/^(.+?)\s*[|•·@]\s*(.+)$/) || text.match(/^(.+?)\s+[-–—]\s+(.+)$/) || text.match(/^(.+?),\s+(.+)$/);
     return m ? [m[1].trim(), m[2].trim()] : [text.trim(), ''];
   }
-  function parseWork(ls) {
+  // join a line that the PDF wrapped back onto the line before it
+  function joinWrap(prev, line) { return /[A-Za-z]-$/.test(prev) && /^[A-Za-z]/.test(line) ? prev + line : prev + ' ' + line; }
+  const OPEN_END = /([,;&\/+\-–]|\b(and|or|of|the|to|for|with|in|on|at|a|an|including|across|by|from|into|through|within)$)/i;
+  function parseWork(ls, report) {
+    report = report || { joined: 0 };
     const jobs = [];
     let cur = null, headLines = [], inBullets = false;
     const flush = () => {
@@ -762,6 +766,10 @@
     };
     const VERB = /^(?:[A-Z][a-z]+(?:ed|ing)|Led|Built|Ran|Cut|Won|Grew|Drove|Set|Made|Wrote|Sold|Taught|Oversaw|Began|Brought|Took|Held|Kept|Met|Spoke|Sat|Responsible|Lead|Run|Build|Manage|Deliver|Design|Develop|Support|Work)\b/;
     ls.forEach(line => {
+      if (inBullets && cur && cur.highlights.length && !RANGE.test(line) && !BULLET.test(line)) {
+        const prev = cur.highlights[cur.highlights.length - 1];
+        if ((/^[a-z]/.test(line) && !/[.!?]$/.test(prev)) || OPEN_END.test(prev)) { cur.highlights[cur.highlights.length - 1] = joinWrap(prev, line.trim()); report.joined++; return; }
+      }
       const startedRole = !!cur || headLines.some(h => RANGE.test(h));
       const looksLikeBullet = startedRole && !RANGE.test(line) && line.split(' ').length >= 5 && (VERB.test(line) || /[.;]$/.test(line));
       if (looksLikeBullet && !BULLET.test(line)) line = '• ' + line;
@@ -775,7 +783,7 @@
         inBullets = true;
       } else {
         // a wrapped bullet continuation: lower-case start right after a bullet
-        if (inBullets && cur && cur.highlights.length && !hasRange && /^[a-z(0-9]/.test(line)) { cur.highlights[cur.highlights.length - 1] += ' ' + line.trim(); return; }
+        if (inBullets && cur && cur.highlights.length && !hasRange && /^[a-z(0-9]/.test(line)) { cur.highlights[cur.highlights.length - 1] += ' ' + line.trim(); report.joined++; return; }
         if (inBullets || (hasRange && headLines.some(h => RANGE.test(h)))) { flush(); cur = null; inBullets = false; }
         headLines.push(line);
       }
@@ -818,8 +826,27 @@
       const t = l.trim();
       return /^(?:[A-Z&]\s{1,2}){2,}[A-Z&](?:\s{2,}(?:[A-Z&]\s{1,2})*[A-Z&])*$/.test(t) ? t.split(/\s{2,}/).map(w => w.replace(/\s/g, '')).join(' ') : l;
     };
-    const raw = String(text || '').replace(/\r/g, '').replace(/\u00a0/g, ' ').split('\n').map(l => unspace(l).replace(/[ \t]{4,}/g, ' \u2003 ').replace(/[ \t]+/g, ' ').trim())
-      .filter(l => l && !/^(universal cv id\s*)?#?UCVID-[A-Z0-9]{5}$/i.test(l) && !/· Page \d+ of \d+$/.test(l))
+    const report = { footers: 0, joined: 0, skills: 0, removed: [] };
+    const drop = t => { report.footers++; if (report.removed.length < 12 && !report.removed.includes(t)) report.removed.push(t); return false; };
+    // Page headers and footers: page numbers anywhere, and lines repeated at the top or bottom of several pages (PDFs mark pages with \f)
+    const PAGE_RE = /^(?:.{0,90}?[\s·|•,–—-]+)?page\s*\d+\s*(?:of|\/)\s*\d+\.?$|^page\s*\d+$|^\d+\s*(?:of|\/)\s*\d+$|^[-–—]\s*\d+\s*[-–—]$/i;
+    const norm = t => t.toLowerCase().replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
+    const pageTexts = String(text || '').replace(/\r/g, '').replace(/\u00a0/g, ' ').split(/\f/);
+    const edgeOf = ls => { const ne = ls.map((l, i) => [l.trim(), i]).filter(x => x[0]); return { top: ne.slice(0, 2).map(x => x[1]), bottom: ne.slice(-2).map(x => x[1]) }; };
+    const edgeCount = new Map();
+    if (pageTexts.length > 1) pageTexts.forEach(pt => { const ls = pt.split('\n'), e = edgeOf(ls); new Set([...e.top, ...e.bottom].map(i => norm(ls[i]))).forEach(k => edgeCount.set(k, (edgeCount.get(k) || 0) + 1)); });
+    const kept = [];
+    pageTexts.forEach((pt, pi) => {
+      const ls = pt.split('\n'), e = edgeOf(ls);
+      ls.forEach((l, i) => {
+        const t = l.trim();
+        const atEdge = (pi > 0 && e.top.includes(i)) || e.bottom.includes(i);
+        if (t && atEdge && t.length < 100 && (edgeCount.get(norm(t)) || 0) >= 2) { drop(t); return; }
+        kept.push(l);
+      });
+    });
+    const raw = kept.map(l => unspace(l).replace(/[ \t]{4,}/g, ' \u2003 ').replace(/[ \t]+/g, ' ').trim())
+      .filter(l => l && !/^(universal cv id\s*)?#?UCVID-[A-Z0-9]{5}$/i.test(l) && !(/· Page \d+ of \d+$/.test(l) || PAGE_RE.test(l.replace(/\s*\u2003\s*/g, ' ')) ? !drop(l.replace(/\s*\u2003\s*/g, ' ')) : false))
       .reduce((acc, l) => { if (acc.length && /^[•\-*·▪◦●○■➢►✓]$/.test(acc[acc.length - 1])) acc[acc.length - 1] += ' ' + l; else acc.push(l); return acc; }, []); // a bullet dot alone on its line belongs to the next line
     const cv = { basics: { name: '', label: '', email: '', phone: '', location: '', url: '', summary: '' }, work: [], education: [], skills: [], projects: [], certificates: [], languages: [], custom: [] };
     // split into sections
@@ -837,8 +864,9 @@
     cv.basics.url = (joined.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/[A-Za-z0-9\-_/%]+/i) || joined.match(/https?:\/\/[^\s|,]+/) || [''])[0];
     const isContact = l => /@|linkedin\.com|https?:\/\/|www\./i.test(l) || /\+?\d[\d\s().-]{7,}\d/.test(l);
     const clean = top.filter(l => !/^(curriculum vitae|resume|résumé|cv)$/i.test(l));
-    const nameLine = clean.find(l => !isContact(l) && l.split(' ').length <= 5 && /^[A-Za-zÀ-ÿ'’.\- ,()]+$/.test(l));
-    if (nameLine) cv.basics.name = nameLine.replace(/,?\s*(CEng|PhD|MBA|MSc|BEng|MIEI|PMP|BSc|MEng)\b.*$/, '').trim();
+    const CRED = /,?\s+(?:CEng|C\.Eng|IntPE|PhD|Ph\.D|MBA|MSc|BEng|BSc|MEng|MIEI|FIEI|PMP|CPA|ACCA|CFA|MIMechE|MIET|CEnv|CSci|PEng|FRSA|MRICS|MCIPD)\b.*$/;
+    const nameLine = clean.find(l => !isContact(l) && l.replace(CRED, '').split(' ').length <= 5 && /^[A-Za-zÀ-ÿ'’.\- ,()]+$/.test(l));
+    if (nameLine) cv.basics.name = nameLine.replace(CRED, '').trim();
     if (cv.basics.name && cv.basics.name === cv.basics.name.toUpperCase()) cv.basics.name = cv.basics.name.toLowerCase().replace(/(^|[\s\-'’.])([a-zà-ÿ])/g, (m, a, b) => a + b.toUpperCase());
     const after = clean.slice(clean.indexOf(nameLine) + 1);
     const labelLine = after.find(l => !isContact(l) && l.length < 70 && l.split(' ').length <= 9);
@@ -851,10 +879,29 @@
     blocks.slice(1).forEach(bk => {
       const ls = bk.lines;
       if (bk.key === 'summary') cv.basics.summary = ls.map(l => l.replace(BULLET, '')).join(' ');
-      else if (bk.key === 'work') cv.work = cv.work.concat(parseWork(ls));
+      else if (bk.key === 'work') cv.work = cv.work.concat(parseWork(ls, report));
       else if (bk.key === 'education') cv.education = cv.education.concat(parseEducation(ls));
       else if (bk.key === 'skills') {
-        ls.forEach(l => l.replace(BULLET, '').replace(/^[A-Za-z &/]{3,40}:\s*/, '').split(/\s*[,;|•·\u2003]\s*/).forEach(s => { s = s.trim().replace(/\.$/, ''); if (s && s.length < 60 && !cv.skills.some(x => x.toLowerCase() === s.toLowerCase())) cv.skills.push(s); }));
+        // first undo line wraps ("Cross-" / "Functional & Global Collaboration"), then split on real separators only
+        const SKILL_OPEN = /[-&\/+]$|\b(and|or|of|for|with|in|to)$/i;
+        const merged = [];
+        ls.map(l => l.replace(BULLET, '').trim()).filter(Boolean).forEach(l => {
+          const p = merged[merged.length - 1];
+          if (p && !/:\s*$/.test(p) && !/^[A-Za-z &/]{3,40}:/.test(l) && (SKILL_OPEN.test(p) || (/^[a-z]/.test(l) && !/[,;.|•·]$/.test(p)))) { merged[merged.length - 1] = joinWrap(p, l); report.skills++; }
+          else merged.push(l);
+        });
+        merged.forEach(l => {
+          const parts = l.replace(/^[A-Za-z &/]{3,40}:\s*/, '').split(/(\s*[,;|•·]\s*|\s*\u2003\s*)/);
+          const items = [];
+          for (let i = 0; i < parts.length; i += 2) {
+            const s = (parts[i] || '').trim(), sep = i ? parts[i - 1] : '';
+            if (!s) continue;
+            const prev = items[items.length - 1];
+            if (prev && /\u2003/.test(sep) && (SKILL_OPEN.test(prev) || /^[a-z]/.test(s))) { items[items.length - 1] = joinWrap(prev, s); report.skills++; continue; }
+            items.push(s);
+          }
+          items.forEach(s => { s = s.replace(/\.$/, '').replace(/^[-–—]\s*/, '').trim(); if (s && s.length < 80 && !cv.skills.some(x => x.toLowerCase() === s.toLowerCase())) cv.skills.push(s); });
+        });
       } else if (bk.key === 'projects') {
         let cur = null;
         ls.forEach(l => { if (!BULLET.test(l) && l.length < 80) { cur = { name: l.replace(/[:\-–—]+$/, ''), description: '', url: '' }; cv.projects.push(cur); } else if (cur) cur.description = (cur.description + ' ' + l.replace(BULLET, '')).trim(); else { cur = { name: l.replace(BULLET, '').slice(0, 60), description: '', url: '' }; cv.projects.push(cur); } });
@@ -867,7 +914,9 @@
       }
     });
     const scrub = o => { Object.keys(o).forEach(k => { if (typeof o[k] === 'string') o[k] = o[k].replace(/\s*\u2003\s*/g, ' ').trim(); else if (o[k] && typeof o[k] === 'object') scrub(o[k]); }); return o; };
-    return scrub(cv);
+    scrub(cv);
+    cv.report = report;
+    return cv;
   }
 
   // ---------- sharing ----------
