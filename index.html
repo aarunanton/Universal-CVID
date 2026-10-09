@@ -109,18 +109,20 @@
  }
 ]
 </script>
-<script src="assets/boot.js?v=21"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=21">
-<link rel="stylesheet" href="assets/styles.css?v=21">
+<script src="assets/boot.js?v=23"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=23">
+<link rel="stylesheet" href="assets/styles.css?v=23">
 </head>
 <body>
   <nav class="site-nav" aria-label="Main">
-    <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID</a>
+    <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID<span class="beta-tag">Beta</span></a>
     <div class="links">
       <a class="btn btn-ghost" href="index.html#features">Features</a>
       <a class="btn btn-ghost" href="index.html#pipeline">What's next</a>
       <a class="btn btn-ghost" href="privacy.html">Privacy</a>
-      <a class="btn btn-primary" href="app.html">Open the builder</a>
+      <a class="nav-fb" href="https://tally.so/r/1A11el" target="_blank" rel="noopener" title="Give feedback: 2-minute anonymous survey" aria-label="Give feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Feedback</span></a>
+      <button class="theme-btn" data-action="theme" aria-label="Switch light or dark mode" title="Light or dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/></svg></button>
+      <a class="btn btn-primary" href="app.html">Open <span class="hide-sm">the </span>builder</a>
     </div>
   </nav>
 
@@ -225,6 +227,22 @@
     </ol>
   </section>
 
+  <section class="section beta-sec" id="beta" style="padding-top:0">
+    <div class="beta-panel">
+      <div class="beta-head">
+        <span class="beta-tag beta-tag-lg">Beta</span>
+        <h2>Universal CV ID is in beta.</h2>
+        <p>Everything below works today and is free. Some parts are still early, and some are on the way.</p>
+      </div>
+      <div class="beta-grid">
+        <article class="beta-card live"><span class="eyebrow">Live now</span><h3>The builder, tailoring and tracker</h3><p>Build and import CVs, tailor a version for each job, check it against the advert, write cover letters, download PDF or Word, and track your applications.</p></article>
+        <article class="beta-card early"><span class="eyebrow">Beta</span><h3>Your Universal CV ID</h3><p>Your ID is created on your device and ties your CV versions and applications together. For now it is not registered online or verified, and it stays in this browser.</p></article>
+        <article class="beta-card next"><span class="eyebrow">Coming soon</span><h3>Profile, verification, validation</h3><p>A living profile behind your ID, and ways to back up what your CV says. <a href="#pipeline">See what's next</a>.</p></article>
+      </div>
+      <p class="beta-fine">Expect the odd rough edge while we build. Download a backup of your CV from Export now and then, and <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">tell us what's missing or broken</a>.</p>
+    </div>
+  </section>
+
   <div class="band" id="pipeline">
     <div class="pipeline-panel">
       <span class="eyebrow">In the pipeline</span>
@@ -287,7 +305,8 @@
     </div>
   </footer>
 
-  <script src="assets/cv.js?v=21"></script>
-  <script src="assets/home.js?v=21"></script>
+  <script src="assets/cv.js?v=23"></script>
+  <script src="assets/home.js?v=23"></script>
+  <script src="assets/site.js?v=23"></script>
 </body>
 </html>
