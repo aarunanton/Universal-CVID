@@ -6,7 +6,7 @@
 <title>Free CV Builder, No Sign-Up | Universal CV ID</title>
 <meta name="description" content="Free CV builder with no sign-up. Build your CV from a template or import your old one, tailor a version for every job, and track which CV you sent where. Your data stays in your browser.">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#0F0A1F">
+<meta name="theme-color" content="#F4F2F0">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://cvid.app/">
 <meta property="og:type" content="website">
@@ -109,84 +109,44 @@
  }
 ]
 </script>
-<script src="assets/boot.js?v=23"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=23">
-<link rel="stylesheet" href="assets/styles.css?v=23">
+<script src="assets/boot.js?v=24"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=24">
+<link rel="stylesheet" href="assets/styles.css?v=24">
 </head>
 <body>
-  <nav class="site-nav" aria-label="Main">
+  <nav class="r-nav" aria-label="Main">
     <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID<span class="beta-tag">Beta</span></a>
-    <div class="links">
-      <a class="btn btn-ghost" href="index.html#features">Features</a>
-      <a class="btn btn-ghost" href="index.html#pipeline">What's next</a>
-      <a class="btn btn-ghost" href="privacy.html">Privacy</a>
-      <a class="nav-fb" href="https://tally.so/r/1A11el" target="_blank" rel="noopener" title="Give feedback: 2-minute anonymous survey" aria-label="Give feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Feedback</span></a>
-      <button class="theme-btn" data-action="theme" aria-label="Switch light or dark mode" title="Light or dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M5.3 18.7L7 17M17 7l1.7-1.7"/></svg></button>
-      <a class="btn btn-primary" href="app.html">Open <span class="hide-sm">the </span>builder</a>
+    <div class="r-links">
+      <a href="#features">Features</a>
+      <a href="blog/index.html">Blog</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Feedback</a>
     </div>
+    <a class="btn btn-primary r-nav-cta" href="app.html">Build your CV free</a>
   </nav>
 
-  <header class="hero">
-    <div class="hero-panel">
-      <div>
-        <p class="wordmark hero-mark">Universal CV ID</p>
-        <h1><span class="h1-kicker">Free CV builder · No sign-up · Job tracker</span>One ID.<br><em>Every version</em> of your career.</h1>
-        <p class="lede">Build your CV once, tailor it to every job description in minutes, and always know which version went to which company. Free, no sign-up, and all of it sits behind your permanent Universal CV ID.</p>
-        <div class="ctas">
-          <a class="btn btn-primary" href="app.html">Create your CV ID</a>
-          <a class="btn btn-on-dark" href="app.html#tracker">See the tracker</a>
-        </div>
-        <ul class="tagrow" aria-label="Good to know">
-          <li class="tag tag-lime">Free</li>
-          <li class="tag tag-sky">No account</li>
-          <li class="tag">Stays in your browser</li>
-        </ul>
+  <header class="r-hero">
+    <div class="r-hero-copy">
+      <h1>Stop losing track of which CV you sent where.</h1>
+      <p class="r-lede">A free CV builder with no sign-up. Build your CV once, tailor it to every job, and always know which version went to which company.</p>
+      <div class="r-ctas">
+        <a class="btn btn-primary r-btn-lg" href="app.html">Build your CV free</a>
+        <a class="r-textlink" href="app.html?example=1">Try an example CV</a>
       </div>
-      <div class="hero-visual" aria-hidden="true">
-        <div class="stack-cards">
-          <div class="idcard">
-            <div class="idcard-top"><span>Universal CV ID</span><span>Professional</span></div>
-            <div class="idcard-body">
-              <div class="idcard-photo">MO</div>
-              <div style="min-width:0">
-                <div class="idcard-name">Maya Okafor</div>
-                <div class="idcard-label">Senior Product Designer</div>
-                <div class="idcard-id">#UCVID-K7Q4M</div>
-              </div>
-            </div>
-            <div class="idcard-mrz" id="heroMrz"></div>
-          </div>
-          <div class="ver v1"><b>Northwind Labs – Lead Designer</b><span class="pill st-Interview">Interview</span></div>
-          <div class="ver v2"><b>Harbour Bank – Senior UX</b><span class="pill st-Applied">Applied</span></div>
-        </div>
-        <p class="caption">One ID. A tailored version for each job, tracked from sent to offer.</p>
-      </div>
+      <ul class="r-checks">
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Free PDF and Word downloads</li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>No account needed</li>
+        <li><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3 7-7"/></svg>Your CV stays in your browser</li>
+      </ul>
     </div>
+    <figure class="r-hero-shot"><picture><source media="(max-width: 560px)" srcset="assets/img/builder-m.webp" width="780" height="1560"><img src="assets/img/hero-builder.webp" width="2040" height="1350" alt="The builder: edit your CV on the left and see the A4 page update on the right."></picture></figure>
   </header>
 
-  <section class="section" id="features">
-    <span class="eyebrow">What you get today</span>
-    <h2>Tailor it. Send it. Track it.</h2>
-    <p class="intro">A free online CV builder with one master CV, a tailored version for every job, and a tracker for what went where. All of it tied to your Universal CV ID.</p>
-    <div class="features">
-      <article class="feature f-lime"><div class="top"><span class="eyebrow">Master CV</span><span class="num" aria-hidden="true">01</span></div><h3>Tick what each job needs</h3><p>Keep everything you've done in one place. Tick the roles, bullets and skills each version shows; the rest stays stored.</p></article>
-      <article class="feature f-night"><div class="top"><span class="eyebrow">Tracker</span><span class="num" aria-hidden="true">02</span></div><h3>Know what you sent where</h3><p>Log every application from Saved to Offer, and see exactly which CV version went to which company.</p></article>
-      <article class="feature"><div class="top"><span class="eyebrow">Job match</span><span class="num" aria-hidden="true">03</span></div><h3>Match score against the advert</h3><p>Paste a job advert to see which keywords you cover and which are missing. Save the result as a tailored version.</p></article>
-      <article class="feature"><div class="top"><span class="eyebrow">Import</span><span class="num" aria-hidden="true">04</span></div><h3>Bring your existing CV</h3><p>Upload a PDF or Word file and the sections are filled in for you. No retyping.</p></article>
-      <article class="feature f-sky"><div class="top"><span class="eyebrow">Score</span><span class="num" aria-hidden="true">05</span></div><h3>Every check, pass or fail</h3><p>Content, format and best-practice checks: bullets per role, numbers, weak openers, buzzwords, length and more.</p></article>
-      <article class="feature"><div class="top"><span class="eyebrow">Cover letter</span><span class="num" aria-hidden="true">06</span></div><h3>A letter for every version</h3><p>Drafted from your CV and the job advert, in the same design, ready to edit and download.</p></article>
-      <article class="feature"><div class="top"><span class="eyebrow">Design</span><span class="num" aria-hidden="true">07</span></div><h3>Six CV templates, full type control</h3><p>Font, size, spacing, margins, date format, accent colour and an optional photo. A plain, ATS-friendly version for screening software.</p></article>
-      <article class="feature f-pop"><div class="top"><span class="eyebrow">Share</span><span class="num" aria-hidden="true">08</span></div><h3>Link and QR code</h3><p>Share a full CV link or a short contact card with a QR code. No account needed to view.</p></article>
-      <article class="feature"><div class="top"><span class="eyebrow">Pages</span><span class="num" aria-hidden="true">09</span></div><h3>Real A4 pages, exact PDF</h3><p>Long CVs flow onto page two with page numbers. The PDF matches the preview and uses real text. Word export too.</p></article>
-    </div>
-  </section>
-
-  <section class="section" id="versions" style="padding-top:0">
-    <span class="eyebrow">Multiple versions of your CV</span>
-    <h2>One CV for every job, without the mess.</h2>
+  <section class="section r-section" id="versions">
+        <h2>One CV for every job, without the mess.</h2>
     <div class="versions-grid">
       <div class="versions-copy">
-        <p class="intro">Most people end up with a folder of near-identical files and no idea which one went where. Universal CV ID keeps one master CV and builds each version from it.</p>
+        <p class="intro">Most people end up with a folder of near-identical files and no idea which one went where. We keep one master CV and build each version from it.</p>
         <ul class="versions-list">
           <li><b>Edit once.</b> Fix a typo or add a new job in your master CV and every version can pick it up.</li>
           <li><b>Tick, don't copy.</b> Each version shows only the roles, bullets and skills you tick for that job.</li>
@@ -205,7 +165,7 @@
           </ul>
         </div>
         <div class="vv-block vv-after">
-          <span class="eyebrow">With Universal CV ID</span>
+          <span class="eyebrow">With the builder</span>
           <div class="vv-master">Master CV</div>
           <ul class="vv-vers">
             <li><b>Product Designer – Northwind</b><span class="pill st-Interview">Interview</span></li>
@@ -217,65 +177,61 @@
     </div>
   </section>
 
-  <section class="section" id="how" style="padding-top:0">
-    <span class="eyebrow">How it works</span>
-    <h2>How to make your CV in three steps</h2>
-    <ol class="how">
-      <li><h3>Import or build your CV</h3><p>Upload a PDF or Word file, or start blank with a live A4 preview. Your Universal CV ID is created the moment you start.</p></li>
-      <li><h3>Tailor it to a job</h3><p>Paste the advert, tick the roles and bullets that fit, close the keyword gaps, and draft the cover letter.</p></li>
-      <li><h3>Send and track</h3><p>Download a PDF or Word file, or share a link or QR code, and log the application so you know what went where.</p></li>
-    </ol>
-  </section>
 
-  <section class="section beta-sec" id="beta" style="padding-top:0">
-    <div class="beta-panel">
-      <div class="beta-head">
-        <span class="beta-tag beta-tag-lg">Beta</span>
-        <h2>Universal CV ID is in beta.</h2>
-        <p>Everything below works today and is free. Some parts are still early, and some are on the way.</p>
-      </div>
-      <div class="beta-grid">
-        <article class="beta-card live"><span class="eyebrow">Live now</span><h3>The builder, tailoring and tracker</h3><p>Build and import CVs, tailor a version for each job, check it against the advert, write cover letters, download PDF or Word, and track your applications.</p></article>
-        <article class="beta-card early"><span class="eyebrow">Beta</span><h3>Your Universal CV ID</h3><p>Your ID is created on your device and ties your CV versions and applications together. For now it is not registered online or verified, and it stays in this browser.</p></article>
-        <article class="beta-card next"><span class="eyebrow">Coming soon</span><h3>Profile, verification, validation</h3><p>A living profile behind your ID, and ways to back up what your CV says. <a href="#pipeline">See what's next</a>.</p></article>
-      </div>
-      <p class="beta-fine">Expect the odd rough edge while we build. Download a backup of your CV from Export now and then, and <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">tell us what's missing or broken</a>.</p>
+  <section class="section r-section" id="features">
+    <h2 class="r-h2">Everything you need to apply, in one place.</h2>
+    <div class="r-row">
+      <div class="r-row-copy"><h3>Tailor it to every job</h3><p>Paste the job advert and see which keywords your CV covers and which are missing. Save the result as a new version; your main CV stays as it is.</p></div>
+      <figure class="r-shot"><img src="assets/img/f-match.webp" width="657" height="1125" alt="Job match: a pasted job advert, a keyword match score of 62% and the missing keywords to add." loading="lazy"></figure>
     </div>
-  </section>
-
-  <div class="band" id="pipeline">
-    <div class="pipeline-panel">
-      <span class="eyebrow">In the pipeline</span>
-      <h2>The builder is step one.</h2>
-      <p class="intro">Your ID is meant to carry more than a document. Here is what we are working on next.</p>
-      <div class="soon-grid">
-        <article class="soon"><span class="tag tag-soon">Coming soon</span><h3>Candidate profile</h3><p>A living profile behind your ID, so your career is more than a single file.</p></article>
-        <article class="soon"><span class="tag tag-soon">Coming soon</span><h3>Verification</h3><p>Back up what your CV says, so your experience is believed sooner and you spend less time proving it.</p></article>
-        <article class="soon"><span class="tag tag-soon">Coming soon</span><h3>Validation</h3><p>A quick check that a Universal CV ID is genuine and up to date.</p></article>
-      </div>
-      <p class="fine">None of this is live yet, and plans can change. Today every CV is self-declared. Want a say in what comes first? <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Take the 2-minute survey</a>.</p>
+    <div class="r-row wide">
+      <div class="r-row-copy"><h3>Track every application</h3><p>Log each job from saved to offer, with the CV version you sent, the date you applied and when to follow up.</p></div>
+      <figure class="r-shot"><img src="assets/img/f-tracker.webp" width="1800" height="600" alt="The applications tracker: stages from saved to offer, the CV sent and dates for each job." loading="lazy"></figure>
     </div>
-  </div>
-
-  <section class="section">
-    <div class="privacy-strip">
-      <div>
-        <span class="eyebrow">Your data</span>
-        <h2>Your CV stays on your device.</h2>
-        <a class="btn" href="privacy.html">How your data is handled</a>
-      </div>
+    <div class="r-row">
+      <div class="r-row-copy"><h3>Check it before you send it</h3><p>Every check is a clear pass or fail with a fix: numbers in your bullets, weak openers, buzzwords, length and format.</p></div>
+      <figure class="r-shot"><img src="assets/img/f-check.webp" width="657" height="975" alt="The CV check: a score of 89 with each content and format check marked pass or fail." loading="lazy"></figure>
+    </div>
+    <div class="r-also">
+      <h3>Also in the builder</h3>
       <ul>
-        <li>No account, no sign-up, no password.</li>
-        <li>Nothing you type is sent to us. It is saved in your own browser.</li>
-        <li>No cookies, no trackers, no adverts.</li>
-        <li>You decide what goes into a shared link.</li>
+        <li><b>Import your old CV</b><span>Upload a PDF or Word file and the sections are filled in for you.</span></li>
+        <li><b>Cover letters</b><span>A letter for each version, drafted from your CV and the job advert.</span></li>
+        <li><b>Six templates</b><span>Including a plain layout that screening software reads easily.</span></li>
+        <li><b>Real A4 PDF and Word</b><span>The download matches the preview, with selectable text.</span></li>
+        <li><b>Share a link or QR code</b><span>Send your CV without an attachment. No account needed to view it.</span></li>
       </ul>
     </div>
   </section>
 
-  <section class="section" id="faq">
-    <span class="eyebrow">Questions</span>
-    <h2>Free CV builder: common questions</h2>
+  <section class="r-dark" id="pipeline">
+    <div class="r-dark-inner">
+      <h2 class="r-h2">The builder is step one.</h2>
+      <p class="r-dark-lede">The CV builder is free and works today. It is in beta, so you may meet the odd rough edge. Here is what we are building next.</p>
+      <ul class="r-next">
+        <li><span class="r-status live">Live</span><a href="blog/beta-builder.html"><b>The CV builder</b><span>Build, tailor, check, export and track.</span></a></li>
+        <li><span class="r-status">Coming soon</span><a href="blog/universal-cv-id.html"><b>Your Universal CV ID</b><span>One permanent ID that links every version of your CV and every application.</span></a></li>
+        <li><span class="r-status">Coming soon</span><a href="blog/candidate-profile.html"><b>Candidate profile</b><span>A living profile behind your ID.</span></a></li>
+        <li><span class="r-status">Coming soon</span><a href="blog/verification.html"><b>Verification and validation</b><span>Back up what your CV says, and let employers check it is genuine.</span></a></li>
+      </ul>
+      <p class="r-dark-foot"><a href="blog/index.html">Read the blog</a> for the detail, or <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">take the 2-minute survey</a> to tell us what to build first.</p>
+    </div>
+  </section>
+
+  <section class="section r-section r-privacy">
+    <div>
+      <h2 class="r-h2">Your CV stays on your device.</h2>
+      <a class="r-textlink" href="privacy.html">How your data is handled</a>
+    </div>
+    <ul>
+      <li>No account, no sign-up, no password.</li>
+      <li>Nothing you type is sent to us. It is saved in your own browser.</li>
+      <li>No cookies, no trackers, no adverts.</li>
+    </ul>
+  </section>
+
+  <section class="section r-section" id="faq">
+        <h2>Common questions</h2>
     <div class="faq">
       <details class="faq-item"><summary><h3>Is the CV builder really free?</h3></summary><p>Yes. Building, tailoring, downloading as PDF or Word, and tracking applications are all free. There is no trial and no paywall on downloads.</p></details>
       <details class="faq-item"><summary><h3>Do I need to create an account?</h3></summary><p>No. There is no sign-up, email or password. Your CV is saved in your own browser on your own device.</p></details>
@@ -287,26 +243,19 @@
     </div>
   </section>
 
-  <div class="cta-band">
-    <div class="inner">
-      <h2>Build your CV free and get your Universal CV ID.</h2>
-      <a class="btn btn-primary" href="app.html">Open the builder</a>
-    </div>
-  </div>
 
-  <footer class="site-foot">
-    <div class="wordmark" aria-hidden="true">Universal CV ID</div>
-    <div class="foot-row">
-      <span>Universal CV ID · open source under the MIT licence</span>
-      <span class="spacer"></span>
-      <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Give feedback</a>
-      <a href="privacy.html">Data and privacy</a>
-      <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
-    </div>
+  <section class="r-cta">
+    <h2>Stop losing track of which CV you sent where.</h2>
+    <a class="btn btn-primary r-btn-lg" href="app.html">Build your CV free</a>
+  </section>
+
+  <footer class="r-foot">
+    <span>Universal CV ID, open source under the MIT licence</span>
+    <span class="spacer"></span>
+    <a href="blog/index.html">Blog</a>
+    <a href="privacy.html">Data and privacy</a>
+    <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Give feedback</a>
+    <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
   </footer>
-
-  <script src="assets/cv.js?v=23"></script>
-  <script src="assets/home.js?v=23"></script>
-  <script src="assets/site.js?v=23"></script>
 </body>
 </html>
