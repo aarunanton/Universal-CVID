@@ -8,12 +8,12 @@
 <meta name="description" content="Free online CV builder. Build, tailor and download your CV as PDF or Word, and track your job applications. No sign-up.">
 <link rel="canonical" href="https://cvid.app/app.html">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<script src="assets/boot.js?v=24"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=24">
-<link rel="stylesheet" href="assets/styles.css?v=24">
-<script src="assets/vendor/lz-string.min.js?v=24"></script>
-<script src="assets/vendor/qrcode.min.js?v=24"></script>
-<script src="assets/vendor/jspdf.umd.min.js?v=24"></script>
+<script src="assets/boot.js?v=25"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=25">
+<link rel="stylesheet" href="assets/styles.css?v=25">
+<script src="assets/vendor/lz-string.min.js?v=25"></script>
+<script src="assets/vendor/qrcode.min.js?v=25"></script>
+<script src="assets/vendor/jspdf.umd.min.js?v=25"></script>
 </head>
 <body>
   <header class="app-bar">
@@ -25,6 +25,7 @@
         <button class="ver-chip" data-tab="home" title="Back to the dashboard"><span class="sw">← Dashboard</span><span class="eyebrow">Editing</span><b id="verName">Main CV</b></button>
         <select id="versionSelect" class="sr" tabindex="-1" aria-hidden="true"></select>
       </div>
+      <div class="pv-size" role="group" aria-label="Preview size"><span>Preview</span><button type="button" data-action="pv-size" data-size="small" aria-pressed="true">Small</button><button type="button" data-action="pv-size" data-size="large" aria-pressed="false">Large</button><button type="button" data-action="pv-size" data-size="hidden" aria-pressed="false">Hidden</button></div>
       <a class="fb-link" href="https://tally.so/r/1A11el" target="_blank" rel="noopener" title="Give feedback: 2-minute anonymous survey" aria-label="Give feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Feedback</span></a>
     </div>
     <nav class="tabs" id="tabs" role="tablist" aria-label="Main"></nav>
@@ -48,7 +49,7 @@
 
   <div class="toast-wrap" id="toasts" aria-live="polite"></div>
 
-  <script src="assets/cv.js?v=24"></script>
-  <script src="assets/app.js?v=24"></script>
+  <script src="assets/cv.js?v=25"></script>
+  <script src="assets/app.js?v=25"></script>
 </body>
 </html>
