@@ -720,10 +720,10 @@
         <div class="app-row${appOpen === a.aid ? ' is-open' : ''}">
           <div class="trk-row">
             <button class="trk-main" data-action="app-open" data-aid="${a.aid}" aria-expanded="${appOpen === a.aid}"><b>${esc(a.role)}</b><span>${esc(a.company)}${a.location ? ' · ' + esc(a.location) : ''}</span>${due(a) ? '<em>Follow up due</em>' : ''}</button>
-            <select data-app="${a.aid}" data-field="vid" aria-label="CV sent">${verOpts(a.vid)}</select>
-            <select class="st-sel st-${a.status}" data-app="${a.aid}" data-field="status" aria-label="Stage">${UCV.STATUSES.map(st => `<option ${st === a.status ? 'selected' : ''}>${st}</option>`).join('')}</select>
-            <input type="date" data-app="${a.aid}" data-field="date" value="${esc(a.date || '')}" aria-label="Date applied">
-            <input type="date" data-app="${a.aid}" data-field="followUp" value="${esc(a.followUp || '')}" aria-label="Follow-up date">
+            <label class="trk-cell"><span class="trk-lab">CV sent</span><select data-app="${a.aid}" data-field="vid" aria-label="CV sent">${verOpts(a.vid)}</select></label>
+            <label class="trk-cell"><span class="trk-lab">Stage</span><select class="st-sel st-${a.status}" data-app="${a.aid}" data-field="status" aria-label="Stage">${UCV.STATUSES.map(st => `<option ${st === a.status ? 'selected' : ''}>${st}</option>`).join('')}</select></label>
+            <label class="trk-cell"><span class="trk-lab">Applied</span><input type="date" data-app="${a.aid}" data-field="date" value="${esc(a.date || '')}" aria-label="Date applied"></label>
+            <label class="trk-cell"><span class="trk-lab">Follow up</span><input type="date" data-app="${a.aid}" data-field="followUp" value="${esc(a.followUp || '')}" aria-label="Follow-up date"></label>
             <span class="stars" role="group" aria-label="Interest, ${+a.excitement || 0} of 5">${[1, 2, 3, 4, 5].map(n => `<button data-action="app-star" data-aid="${a.aid}" data-n="${n}" class="${n <= (+a.excitement || 0) ? 'on' : ''}" aria-label="${n} of 5">★</button>`).join('')}</span>
             <button class="icon-btn" data-action="app-open" data-aid="${a.aid}" aria-label="${appOpen === a.aid ? 'Hide' : 'Show'} details">${appOpen === a.aid ? '–' : '+'}</button>
           </div>

@@ -1027,3 +1027,94 @@ input[type="number"] { width: 100%; font: 15px/1.4 var(--font); color: var(--ink
 .vv-vers li{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#1E1733;border-radius:8px;padding:10px 12px;font-size:14px}
 .vv-vers b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:820px){.versions-grid{grid-template-columns:1fr}}
+
+/* v21: beta labels, beta section, homepage nav feedback + theme */
+.beta-tag{display:inline-block;margin-left:.45em;padding:.28em .5em;border-radius:6px;background:#C6FF3A;color:#0F0A1F;font:700 .42em/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;vertical-align:middle;transform:translateY(-.08em)}
+.app-bar .beta-tag{font-size:10px}
+@media (max-width:560px){.app-bar .beta-tag{display:none}}
+.beta-tag-lg{margin:0 0 14px;font-size:12px;padding:.4em .7em}
+.beta-panel{background:var(--surface);border-radius:var(--radius,14px);padding:clamp(20px,3.5vw,36px)}
+.beta-head h2{font:700 clamp(26px,3.4vw,40px)/1.05 var(--display);letter-spacing:-.03em;margin:0}
+.beta-head p{color:var(--ink-2);margin:10px 0 0;max-width:46em}
+.beta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.beta-card{border-radius:12px;padding:18px;background:var(--surface-2)}
+.beta-card .eyebrow{display:inline-block;padding:.3rem .5rem;border-radius:5px;margin-bottom:10px}
+.beta-card.live .eyebrow{background:var(--good-soft);color:var(--good)}
+.beta-card.early .eyebrow{background:#C6FF3A;color:#0F0A1F}
+.beta-card.next .eyebrow{background:var(--info-soft);color:var(--info)}
+.beta-card h3{font-size:17px;margin:0 0 6px}
+.beta-card p{margin:0;color:var(--ink-2);font-size:15px}
+.beta-fine{margin:18px 0 0;color:var(--ink-2);font-size:14px}
+@media (max-width:820px){.beta-grid{grid-template-columns:1fr}}
+.nav-fb{display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 14px;border-radius:999px;background:var(--surface);color:var(--ink);font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+.nav-fb:hover{background:var(--surface-2)}
+.nav-fb svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.site-nav .theme-btn{border:0}
+@media (max-width:760px){.nav-fb{width:42px;padding:0;justify-content:center}.nav-fb span{display:none}}
+@media (max-width:420px){.nav-fb,.site-nav .theme-btn{width:36px;height:36px}.site-nav .beta-tag{display:none}}
+.site-nav .brand{white-space:nowrap}
+@media (max-width:420px){.site-nav{gap:.5rem}.site-nav .brand{font-size:19px;gap:.5rem}.site-nav .brand-mark{width:34px;height:25px}.site-nav .links{gap:.25rem}.hide-sm{display:none}}
+@media (max-width:389px){.site-nav .links .btn-primary{display:none}}
+.versions-grid>*,.beta-grid>*{min-width:0}
+.versions-visual>*{min-width:0}@media (max-width:820px){.versions-grid{grid-template-columns:minmax(0,1fr)}}
+.vv-vers li{min-width:0}
+.site-foot>*{min-width:0}@media (max-width:360px){.site-foot .wordmark{font-size:28px}}
+
+/* ===== v22: layout alignment + "labels never look like buttons" =====
+   Rule: saturated lime/dark pills = things you can press. Labels and stats use
+   small square-cornered tags in soft tints, so they never read as buttons. */
+:root { --tag-bg: #E6FFA8; --tag-ink: #2F5200; --kpi-hi-bg: #E6FFA8; --kpi-hi-ink: #0F0A1F; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --tag-bg: rgba(198,255,58,.16); --tag-ink: #C6FF3A; --kpi-hi-bg: rgba(198,255,58,.12); --kpi-hi-ink: #F2F2F5; } }
+:root[data-theme="dark"] { --tag-bg: rgba(198,255,58,.16); --tag-ink: #C6FF3A; --kpi-hi-bg: rgba(198,255,58,.12); --kpi-hi-ink: #F2F2F5; }
+
+/* tags: square corners, soft tint */
+.beta-tag, .beta-card.early .eyebrow, .vnow { background: var(--tag-bg); color: var(--tag-ink); border-radius: 4px; }
+.beta-card .eyebrow { border-radius: 4px; }
+.tag-soon, .soon .tag-soon { background: rgba(198,255,58,.14); color: #C6FF3A; border-radius: 4px; }
+/* "Master CV" in the illustration: a highlighted row, not a button */
+.vv-master { display: block; background: rgba(198,255,58,.14); color: #C6FF3A; border-radius: 8px; font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 12px; }
+/* dashboard numbers: no saturated lime card */
+.k-lime { background: var(--kpi-hi-bg); color: var(--kpi-hi-ink); }
+:root[data-theme="dark"] .k-lime b { color: #C6FF3A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-lime b { color: #C6FF3A; } }
+
+/* one button shape everywhere: pill */
+.btn { border-radius: 999px; }
+
+/* dashboard header: actions sit on the right */
+.dash-head > .row { flex: 0 0 auto; margin-left: auto; }
+@media (max-width: 640px) { .dash-head > .row { margin-left: 0; } }
+
+/* consistent inner padding for the big homepage / privacy panels */
+.hero-panel, .beta-panel, .pipeline-panel, .privacy-strip, .cta-band .inner, .doc-head { padding: clamp(22px, 5vw, 56px); }
+.doc-card { padding: clamp(22px, 4vw, 40px); }
+.doc-head { padding-left: clamp(22px, 4vw, 40px); padding-right: clamp(22px, 4vw, 40px); }
+.beta-panel { border-radius: 28px; }
+.beta-head h2 { font: 700 clamp(30px, 4.4vw, 52px)/1.02 var(--display); letter-spacing: -.03em; }
+
+/* how it works: numbers the same height so titles line up */
+.how li::before { height: 44px; display: block; }
+
+/* hero buttons: equal width when stacked on phones */
+@media (max-width: 560px) { .hero .ctas { flex-direction: column; } .hero .ctas .btn { width: 100%; justify-content: center; text-align: center; } }
+
+/* builder top bar on phones: one row (the ID is shown on the dashboard and profile) */
+@media (max-width: 560px) { .app-bar .id-chip, .app-bar .save-state { display: none; } }
+
+/* tracker rows: labels on phones, tidy two-column grid */
+.trk-cell { display: block; min-width: 0; }
+.trk-lab { display: none; }
+@media (max-width: 1000px) {
+  .trk-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px; row-gap: 10px; }
+  .trk-row .trk-main { grid-column: 1 / 3; grid-row: 1; }
+  .trk-row > .icon-btn { grid-column: 3; grid-row: 1; }
+  .trk-row > .trk-cell:nth-of-type(1), .trk-row > .trk-cell:nth-of-type(3) { grid-column: 1; }
+  .trk-row > .trk-cell:nth-of-type(2), .trk-row > .trk-cell:nth-of-type(4) { grid-column: 2 / 4; }
+  .trk-row .stars { grid-column: 1 / -1; }
+  .trk-lab { display: block; font: 600 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 5px; }
+}
+.how li { align-content: start; }
+.pipeline-panel .fine a { color: #C6FF3A; }
+@media (max-width: 560px) { .app-bar .fb-link { margin-left: auto; } }
+:root[data-theme="dark"] .k-sky { background: var(--info-soft); color: #F2F2F5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-sky { background: var(--info-soft); color: #F2F2F5; } }
