@@ -48,7 +48,7 @@
 
   // ---------- state helpers ----------
   const active = () => store.versions.find(v => v.vid === store.active) || store.versions[0];
-  const res = () => Object.assign(UCV.resolve(store, active()), { jd: active().target.jd });
+  const res = () => Object.assign(UCV.resolve(store, active()), { jd: active().target.jd, jdCompany: active().target.company });
   const hidden = id => active().hidden.includes(id);
   function persist() {
     active().updatedAt = new Date().toISOString();
@@ -96,7 +96,6 @@
 
   // ---------- top bar ----------
   function renderBar() {
-    $('#idChip').textContent = store.id;
     $('#versionSelect').innerHTML = store.versions.map(v => `<option value="${v.vid}" ${v.vid === store.active ? 'selected' : ''}>${esc(v.name)}</option>`).join('');
     $('#verName').textContent = active().name;
     const sc = UCV.score(res(), pages);
@@ -275,8 +274,7 @@
   function renderStart() {
     return `
       <section class="panel start">
-        <p class="eyebrow">Your ID is ready</p>
-        <h2>${esc(store.id)} is yours. How do you want to start?</h2>
+        <h2>How do you want to start?</h2>
         <p class="sub">Everything stays in this browser. <a href="privacy.html">How your data is handled</a>. You can switch approach later.</p>
         <div class="start-grid">
           <label class="start-card primary" for="startFile">
@@ -314,10 +312,10 @@
     let tmp = $('#measure');
     if (!tmp) { tmp = document.createElement('div'); tmp.id = 'measure'; tmp.setAttribute('aria-hidden', 'true'); document.body.appendChild(tmp); }
     const out = store.versions.map(v => {
-      const r = Object.assign(UCV.resolve(store, v), { jd: v.target.jd });
+      const r = Object.assign(UCV.resolve(store, v), { jd: v.target.jd, jdCompany: v.target.company });
       let pg = pages;
       if (v.vid !== store.active) { try { pg = UCV.paginate(tmp, r, store.id); } catch (e) { pg = 1; } }
-      const mt = UCV.match(r.cv, v.target.jd), apps = store.applications.filter(a => a.vid === v.vid);
+      const mt = UCV.match(r.cv, v.target.jd, v.target.company), apps = store.applications.filter(a => a.vid === v.vid);
       return { v, score: UCV.score(r, pg).score, match: mt ? mt.score : null, apps: apps.length, sent: apps.filter(a => a.status !== 'Saved').length, interviews: apps.filter(a => a.status === 'Interview' || a.status === 'Offer').length };
     });
     tmp.innerHTML = '';
@@ -332,7 +330,7 @@
     const avg = Math.round(stats.reduce((n, x) => n + x.score, 0) / stats.length);
     return `
       <section class="dash-head">
-        <div><span class="eyebrow">${esc(store.id)}</span>
+        <div>
           <h2>${first ? esc(first) + '’s' : 'Your'} Universal CV</h2>
           <p>Everything across your CVs and applications, in one place.</p></div>
         <div class="row"><button class="btn btn-primary" data-action="app-add-go">+ Add application</button><button class="btn dash-alt" data-action="new-version">+ New CV</button></div>
@@ -364,21 +362,15 @@
   }
   function renderProfile() {
     const r = res(), b = r.cv.basics, m = store.master, mb = m.basics, pf = store.prefs || {};
-    const [l1, l2] = UCV.mrz(store.id, b.name, b.label);
-    const initials = (b.name || '?').split(/\s+/).map(x => x[0]).slice(0, 2).join('').toUpperCase();
     const done = [mb.name, mb.email, mb.phone, mb.location, mb.url, m.work.length, m.education.length, m.skills.length >= 5, active().summary, pf.roles].filter(Boolean).length;
     const pref = (label, key, ph) => `<label class="field">${label}<input type="text" data-pref="${key}" value="${esc(pf[key] || '')}" placeholder="${ph}"></label>`;
     return `
       <div class="prof-top">
         <section class="panel prof-id">
-          <div class="idcard" aria-label="Universal CV ID card">
-            <div class="idcard-top"><span>Universal CV ID</span><span>Professional</span></div>
-            <div class="idcard-body"><div class="idcard-photo" aria-hidden="true">${esc(initials)}</div>
-              <div style="min-width:0"><div class="idcard-name">${esc(b.name || 'Your name')}</div><div class="idcard-label">${esc(b.label || 'Your title')}</div><div class="idcard-id">${esc(store.id)}</div></div></div>
-            <div class="idcard-mrz" aria-hidden="true">${esc(l1)}\n${esc(l2)}</div>
-          </div>
-          <div class="row" style="margin-top:.9rem"><button class="btn btn-sm btn-primary" data-action="copy-id">Copy ID</button><button class="btn btn-sm" data-action="open-version" data-vid="${active().vid}">Open my CV</button></div>
-          <p class="hint" style="margin-top:.7rem">One ID across every CV you make. Details are self-declared; verification is on the roadmap.</p>
+          <h2>${esc(b.name || 'Your profile')}</h2>
+          <p class="sub">${esc(b.label || 'Add your professional title under About you.')}</p>
+          <div class="row" style="margin-top:.9rem"><button class="btn btn-sm btn-primary" data-action="open-version" data-vid="${active().vid}">Open my CV</button></div>
+          <div class="soon-note"><b>Coming soon: your Universal CV ID</b><span>One permanent ID that links every version of your CV and every application. <a href="blog/universal-cv-id.html">Read more</a></span></div>
         </section>
         <section class="panel">
           <h2>Profile strength</h2>
@@ -505,7 +497,6 @@
             <div class="swatches" style="margin-top:.4rem">${UCV.ACCENTS.map(c => `<button class="swatch" style="background:${c}" data-action="set-accent" data-color="${c}" aria-label="Accent ${c}" aria-pressed="${d.accent === c}"></button>`).join('')}</div></div>
           <div class="row">
             <label class="switch"><input type="checkbox" data-dbool="photo" ${d.photo ? 'checked' : ''} ${store.master.basics.photo ? '' : 'disabled'}> Show photo${store.master.basics.photo ? '' : ' <span class="hint">(add one under Content)</span>'}</label>
-            <label class="switch"><input type="checkbox" data-dbool="showId" ${d.showId ? 'checked' : ''}> Show Universal CV ID</label>
           </div>
         </div>
       </section>
@@ -545,7 +536,7 @@
   }
 
   function matchResultsHTML() {
-    const r = UCV.match(res().cv, active().target.jd);
+    const r = UCV.match(res().cv, active().target.jd, active().target.company);
     if (!r) return `<p class="empty">Paste a job advert above to see how well this version matches it.</p>`;
     return `
       <div class="score">
@@ -620,7 +611,7 @@
     return `
       <section class="panel">
         <h2>Your CVs</h2>
-        <p class="sub">All of them share <span class="mono">${esc(store.id)}</span> and draw on the same master CV. Each keeps its own title, profile, ticked items, design and cover letter.</p>
+        <p class="sub">All of them draw on the same master CV. Each keeps its own title, profile, ticked items, design and cover letter.</p>
         ${versionCards()}
       </section>`;
   }
@@ -662,7 +653,6 @@
           <div class="stack">
             <label class="field" for="shareLink">Full CV link (“${esc(r.name)}”)<div class="linkbox"><input id="shareLink" type="text" readonly value="${esc(UCV.shareLink(store, r))}"><button class="btn" data-action="copy" data-src="shareLink">Copy</button></div></label>
             <label class="field" for="cardLink">Contact card link <span class="hint">short, used by the QR code</span><div class="linkbox"><input id="cardLink" type="text" readonly value="${esc(UCV.cardLink(store, r))}"><button class="btn" data-action="copy" data-src="cardLink">Copy</button></div></label>
-            <div class="row"><button class="btn" data-action="copy-id">Copy ID</button></div>
           </div>
           <div class="stack" style="justify-items:center"><div class="qr" id="qr" aria-label="QR code for your contact card"></div><span class="hint">For business cards and badges</span></div>
         </div>
@@ -930,7 +920,7 @@
     const redraw = () => { persist(); renderPanel(); renderPreview(); renderBar(); };
 
     switch (a) {
-      case 'start-blank': store = UCV.freshStore(false); store.isNew = false; UCV.save(store); tab = 'edit'; renderAll(); toast('Blank CV ready. Your ID is ' + store.id); break;
+      case 'start-blank': store = UCV.freshStore(false); store.isNew = false; UCV.save(store); tab = 'edit'; renderAll(); toast('Blank CV ready.'); break;
       case 'start-example': store.isNew = false; persist(); tab = 'home'; renderAll(); break;
       case 'toggle-panel': document.body.classList.toggle('panel-off'); btn.textContent = document.body.classList.contains('panel-off') ? 'Show panel' : 'Hide panel'; fitPaper(); break;
       case 'toggle-preview': document.body.classList.toggle('show-preview'); syncPreviewBtn(); fitPaper(); window.scrollTo(0, 0); break;
@@ -1182,6 +1172,7 @@
   // ---------- boot ----------
   try { const th = localStorage.getItem('ucvid:theme'); if (th) document.documentElement.dataset.theme = th; } catch (_) {}
   const h = location.hash.replace('#', '');
+  if (/[?&]example=1\b/.test(location.search) && store.isNew && store.isSample) { store.isNew = false; persist(); tab = 'home'; }
   if (ALL_TABS.includes(h)) { tab = h; if (store.isNew && h !== 'edit') store.isNew = false; }
   else if (!store.isNew) tab = 'home';
   renderAll();

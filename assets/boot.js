@@ -1,7 +1,7 @@
 /* Loaded first on every page. Locks the page down so that, even if something went wrong
    elsewhere, CV data could not be sent to another server and no outside script could run. */
 (function () {
-  try { var th = localStorage.getItem('ucvid:theme'); if (th) document.documentElement.dataset.theme = th; } catch (_) {}
+  document.documentElement.dataset.theme = 'light';
   if (/claude/.test(location.hostname)) return; // the Claude preview window applies its own policy
   var m = document.createElement('meta');
   m.httpEquiv = 'Content-Security-Policy';

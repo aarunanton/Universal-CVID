@@ -17,19 +17,14 @@ addEventListener('hashchange', () => location.reload());
 
   if (data.t === 'card') {
     const c = UCV.fromCard(data);
-    document.title = (c.n || 'Contact') + ' · ' + id;
-    const [l1, l2] = UCV.mrz(id, c.n, c.l);
+    document.title = (c.n || 'Contact') + ' · Contact card';
     const initials = (c.n || '?').split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
     const web = UCV.safeUrl(c.u);
     const rows = [['Email', esc(c.e)], ['Phone', esc(c.p)], ['Location', esc(c.loc)], ['Web', web ? `<a href="${esc(web)}" target="_blank" rel="noopener noreferrer">${esc(c.u)}</a>` : esc(c.u)]].filter(r => r[1]);
     out.innerHTML = `
       <div class="contact-card">
-        <div class="idcard">
-          <div class="idcard-top"><span>Universal CV ID</span><span>Contact</span></div>
-          <div class="idcard-body"><div class="idcard-photo" aria-hidden="true">${esc(initials)}</div>
-            <div style="min-width:0"><div class="idcard-name">${esc(c.n)}</div><div class="idcard-label">${esc(c.l)}</div><div class="idcard-id">${esc(id)}</div></div></div>
-          <div class="idcard-mrz" aria-hidden="true">${esc(l1)}\n${esc(l2)}</div>
-        </div>
+        <div class="contact-head"><div class="contact-photo" aria-hidden="true">${esc(initials)}</div>
+          <div style="min-width:0"><div class="contact-name">${esc(c.n)}</div><div class="contact-label">${esc(c.l)}</div></div></div>
         <dl>${rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')}</dl>
         ${c.e ? '<button class="btn btn-primary" id="copyEmail">Copy email address</button>' : ''}
         ${note}
@@ -40,7 +35,7 @@ addEventListener('hashchange', () => location.reload());
   }
 
   const res = UCV.fromShare(data);
-  document.title = (res.cv.basics.name || 'Profile') + ' · ' + id;
+  document.title = (res.cv.basics.name || 'CV') + ' · CV';
   out.innerHTML = note + '<div class="paper-wrap" id="paperWrap" style="margin-top:12px"><div class="paper-scale" id="paper"></div></div>';
   const paper = document.getElementById('paper'), wrap = document.getElementById('paperWrap');
   actions.innerHTML = '<button class="btn btn-primary btn-sm" id="dl">Download PDF</button>';

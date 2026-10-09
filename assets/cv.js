@@ -137,7 +137,7 @@
       size: clampN(d.size, 8, 12, D.size), line: clampN(d.line, 1, 2, D.line),
       margin: clampN(d.margin, 5, 30, D.margin), gap: clampN(d.gap, 0, 40, D.gap),
       dateFmt: DATE_FORMATS.some(f => f.id === d.dateFmt) ? d.dateFmt : D.dateFmt,
-      photo: d.photo === true, showId: d.showId !== false
+      photo: d.photo === true, showId: false
     };
   }
   function cleanOrder(o) {
@@ -536,7 +536,7 @@
     const job = cv.work[0];
     const strong = job ? job.highlights.map(plain).filter(h => !WEAK_OPENERS.test(h) && !/^I\b/.test(h)) : [];
     const bullets = strong.filter(h => /\d/.test(h)).concat(strong).filter((x, i, a) => a.indexOf(x) === i).slice(0, 2);
-    const m = match(cv, t.jd);
+    const m = match(cv, t.jd, t.company);
     const inTitle = new RegExp('\\b(' + (role + ' ' + (cv.basics.label || '')).toLowerCase().split(/\W+/).filter(Boolean).join('|') + ')\\b');
     const usable = m ? m.found.filter(k => k.length > 3 && !k.toLowerCase().split(' ').every(w => inTitle.test(w))) : [];
     const kws = usable.filter(k => k.includes(' ')).concat(usable.filter(k => !k.includes(' '))).slice(0, 3);
@@ -628,7 +628,7 @@
     // Job match
     let m = null;
     if (res.jd && res.jd.trim()) {
-      m = match(cv, res.jd);
+      m = match(cv, res.jd, res.jdCompany);
       if (m) add('Job match', m.score >= 70, 'Covers 70% of the job advert’s keywords', `Currently ${m.score}%. Missing: ${m.missing.slice(0, 5).join(', ')}.`, 4);
     }
     const cats = ['Content', 'Format', 'Best practices', 'Job match'].map(name => {
@@ -642,7 +642,8 @@
 
   // ---------- job description match ----------
   const STOP = new Set(('a about above across after again against all also am an and any are as at be because been before being below between both but by can could did do does doing down during each either else etc even ever every few for from further get got had has have having he her here hers him his how i if in into is it its itself just least less like made make many may me might more most much must my no nor not now of off on once only or other our ours out over own per please rather same shall she should since so some such than that the their them then there these they this those though through thus to too under until up upon us very via was we well were what when where whether which while who whom whose why will with within without would yet you your yours ' +
-    'ability able apply applicant applicants benefits candidate candidates company competitive day days description desirable environment essential excellent experience experienced full good great help ideal including job join key looking new offer opportunity opportunities part people plus position preferred proven relevant required requirement requirements responsibilities responsible role roles salary skills skill strong successful support team teams time using work working world year years based across ensure within related level range similar demonstrated knowledge understanding etc provide providing including include includes want wants seeking seek other others high highly clear across expert expertise running familiarity familiar nice tools tool scale standards managers manager plus hands proficiency proficient solid deep closely').split(/\s+/));
+    'ability able apply applicant applicants benefits candidate candidates company competitive day days description desirable environment essential excellent experience experienced full good great help ideal including job join key looking new offer opportunity opportunities part people plus position preferred proven relevant required requirement requirements responsibilities responsible role roles salary skills skill strong successful support team teams time using work working world year years based across ensure within related level range similar demonstrated knowledge understanding etc provide providing including include includes want wants seeking seek other others high highly clear across expert expertise running familiarity familiar nice tools tool scale standards managers manager plus hands proficiency proficient solid deep closely ' +
+    'run runs running build builds building built maintain maintains maintaining own owning create creates creating deliver delivers delivering drive drives driving end background hybrid remote onsite office location permanent contract hours week weekly month monthly annual competitive dublin london cork galway belfast manchester ireland uk').split(/\s+/));
   function tokenize(text) {
     const out = [];
     const re = /[A-Za-z][A-Za-z0-9+#./&-]*[A-Za-z0-9+#]|[A-Za-z]/g;
@@ -657,16 +658,17 @@
     }
     return out;
   }
-  function keywords(jd) {
+  function keywords(jd, exclude) {
+    const ex = new Set(String(exclude || '').toLowerCase().match(/[a-z0-9+#]+/g) || []);
     const toks = tokenize(jd);
     const sc = new Map(), label = new Map();
     const bump = (term, w, raw) => { sc.set(term, (sc.get(term) || 0) + w); if (!label.has(term) || /[A-Z]/.test(raw)) label.set(term, raw); };
     const disp = t => t.cap || /[A-Z]{2,}/.test(t.raw) ? t.raw : t.low;
     toks.forEach((t, i) => {
-      if (STOP.has(t.low) || t.low.length < 2) return;
+      if (STOP.has(t.low) || ex.has(t.low) || t.low.length < 2) return;
       bump(t.low, 1 + (t.cap ? 1 : 0) + (/[A-Z]{2,}|[+#]/.test(t.raw) ? 1 : 0), disp(t));
       const n = toks[i + 1];
-      if (n && !n.gap && !STOP.has(n.low) && n.low.length > 1) bump(t.low + ' ' + n.low, 1.6, disp(t) + ' ' + disp(n));
+      if (n && !n.gap && !STOP.has(n.low) && !ex.has(n.low) && n.low.length > 1) bump(t.low + ' ' + n.low, 1.6, disp(t) + ' ' + disp(n));
     });
     const list = [...sc.entries()].filter(([term, s]) => !term.includes(' ') || s >= 3.2).sort((a, b) => b[1] - a[1]);
     const phrases = list.filter(([t]) => t.includes(' ')).slice(0, 10);
@@ -690,8 +692,8 @@
     const e = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '[\\s-]+');
     return new RegExp('(^|[^a-z0-9])' + e + '($|[^a-z0-9])').test(text);
   }
-  function match(cv, jd) {
-    const kws = keywords(jd || '');
+  function match(cv, jd, exclude) {
+    const kws = keywords(jd || '', exclude);
     if (!kws.length) return null;
     const text = cvText(cv);
     let got = 0, total = 0;
