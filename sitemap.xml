@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://cvid.app/</loc><lastmod>2026-10-09</lastmod></url>
+  <url><loc>https://cvid.app/</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://cvid.app/cv-checker.html</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://cvid.app/cv-builder.html</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://cvid.app/faq.html</loc><lastmod>2026-10-14</lastmod></url>
+  <url><loc>https://cvid.app/about.html</loc><lastmod>2026-10-14</lastmod></url>
   <url><loc>https://cvid.app/app.html</loc><lastmod>2026-10-09</lastmod></url>
   <url><loc>https://cvid.app/privacy.html</loc><lastmod>2026-10-09</lastmod></url>
   <url><loc>https://cvid.app/blog/</loc><lastmod>2026-10-09</lastmod></url>
