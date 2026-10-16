@@ -1775,3 +1775,9 @@ h2 .count { font: 600 13px/1 var(--font); color: var(--ink-3); margin-left: .35r
   body:not(.mode-dash):not(.is-start) .app-bar .tabs { display: none; }
   body:not(.mode-dash):not(.is-start) .bar-actions { margin-left: auto; }
 }
+@media (min-width: 1001px) and (max-width: 1240px) {
+  body:not(.mode-dash):not(.is-start) .app-bar-inner { flex-wrap: nowrap; }
+  body:not(.mode-dash):not(.is-start) .brand { font-size: 0; gap: 0; }
+  body:not(.mode-dash):not(.is-start) .ver-chip .sw { white-space: nowrap; }
+}
+@media (max-width: 760px) { body:not(.mode-dash):not(.is-start) .bar-actions { margin-left: auto; } }
