@@ -45,11 +45,12 @@
  ]
 }
 </script>
-<script src="assets/boot.js?v=27"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=27">
-<link rel="stylesheet" href="assets/styles.css?v=27">
+<script src="assets/boot.js?v=29"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=29">
+<link rel="stylesheet" href="assets/styles.css?v=29">
 </head>
 <body>
+  <div class="h-dark h-dark-nav">
   <nav class="r-nav" aria-label="Main">
     <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID<span class="beta-tag">Beta</span></a>
     <div class="r-links">
@@ -60,36 +61,120 @@
     </div>
     <a class="btn btn-primary r-nav-cta" href="cv-checker.html">Check my CV free</a>
   </nav>
-  <header class="r-hero">
-    <div class="r-hero-copy">
-      <span class="beta-tag beta-tag-lg">New · Free CV checker</span>
+  </div>
+  <main>
+  <header class="h-hero">
+    <div class="h-hero-copy">
+      <span class="h-eyebrow">New · Free CV checker for Ireland and the UK</span>
       <h1>Not getting interviews? See what your CV is missing.</h1>
-      <p class="r-lede">Upload your CV and see what a recruiter would notice, marked on your own page, with a fix for each one.</p>
-      <div class="r-ctas">
+      <p class="h-lede">Drop in your CV and see what a recruiter would notice, marked on your own page, with a fix for each one.</p>
+      <div class="h-ctas">
         <a class="btn btn-primary r-btn-lg" href="cv-checker.html">Check my CV free</a>
-        <a class="r-textlink" href="cv-checker.html#example">Try it with an example CV</a>
+        <a class="h-link-light" href="cv-checker.html#example">Try it with an example CV →</a>
       </div>
-      <ul class="r-checks">
-        <li>Free, no sign-up</li>
-        <li>Your CV never leaves your browser</li>
-      </ul>
+      <p class="h-small">Free, no sign-up · Your CV never leaves your browser</p>
     </div>
-    <figure class="r-hero-shot"><img src="assets/img/hero-check.webp" width="2368" height="1480" alt="The CV check: an example CV with problem lines highlighted, and a short list of fixes beside it."></figure>
+    <figure class="h-shot">
+      <img src="assets/img/hero-check.webp" width="2368" height="1480" alt="The CV check: an example CV with problem lines highlighted and numbered, and a short list of fixes beside it.">
+      <figcaption><span>Shown with an example CV</span><span>Private · Runs in your browser · Nothing stored</span></figcaption>
+    </figure>
   </header>
-  <section class="section r-section">
-    <h2 class="r-h2">Check it. Fix it. Send it.</h2>
-    <div class="steps3">
-      <a class="step3" href="cv-checker.html"><span class="n">1</span><b>Check your CV</b><span>See what a recruiter notices in the first 20 seconds, and why.</span><u>Free CV checker</u></a>
-      <a class="step3" href="cv-builder.html"><span class="n">2</span><b>Fix it in the builder</b><span>Import your CV, edit it, and download a clean A4 PDF or Word file.</span><u>Free CV builder</u></a>
-      <a class="step3" href="cv-builder.html#versions"><span class="n">3</span><b>Tailor and track</b><span>Make a version for each job and know which CV went where.</span><u>Tailoring and tracking</u></a>
+
+  <section class="h-proof" aria-label="How the checker was tested">
+    <div class="h-proof-lead"><span class="h-live">Tested before launch</span><span>Every rule checked on test CVs and reviewed, October 2026.</span></div>
+    <div class="h-stat"><b>1 in 36</b><span class="h-stat-t">Flags judged wrong</span><span>Down from 9 in 42 after testing.</span></div>
+    <div class="h-stat"><b>41</b><span class="h-stat-t">Checks, each with a reason</span><span>Six more were switched off after testing.</span></div>
+    <div class="h-stat"><b>0</b><span class="h-stat-t">CVs stored</span><span>The check runs on your device.</span></div>
+  </section>
+
+  <section class="h-features">
+    <div class="h-head">
+      <span class="h-kicker">What changes for your CV</span>
+      <h2>Fewer guesses, and a CV that says what you did.</h2>
+      <p>Three parts of getting a job, shown with one example CV. You stay in charge of every word.</p>
+    </div>
+
+    <div class="h-feature">
+      <h3>See exactly which lines are holding your CV back.</h3>
+      <p class="h-links"><a href="cv-checker.html">CV checker →</a><a href="cv-checker.html#example">Example report →</a><a href="faq.html">What we check →</a></p>
+      <div class="h-flow h-tint-lime">
+        <div class="h-card"><span class="h-meta">Your CV · line 4</span><p>• Responsible for managing the patient booking system</p></div>
+        <div class="h-arrow" aria-hidden="true"><span>checked</span><span>⋯⋯→</span></div>
+        <div class="h-card"><span class="h-meta">Fix 2 of 6 <i class="h-pill h-pill-bad">No result shown</i></span><p>Says the job, not what got better because of you.</p><p class="h-sub"><b>We need to know:</b> what got better, roughly how much?</p></div>
+        <div class="h-arrow" aria-hidden="true"><span>you answer</span><span>⋯⋯→</span></div>
+        <div class="h-card h-card-good"><span class="h-meta">Better <i class="h-pill h-pill-good">Fixed</i></span><p>• Ran bookings for 4 doctors and cut missed appointments by about a third.</p></div>
+      </div>
+    </div>
+
+    <div class="h-feature">
+      <h3>Match it to the job, and answer what employers ask first.</h3>
+      <p class="h-links"><a href="cv-checker.html">Job advert check →</a><a href="faq.html">Employers ask these first →</a></p>
+      <div class="h-flow h-tint-sky">
+        <div class="h-card"><span class="h-meta">Job advert you pasted</span><p>Medical Secretary, Waterford. <mark>Full clean driving licence required.</mark> Start ASAP.</p></div>
+        <div class="h-arrow" aria-hidden="true"><span>compared</span><span>⋯⋯→</span></div>
+        <div class="h-card"><span class="h-meta">Employers ask these first</span><p>Do you have a driving licence?</p><p class="h-chips"><span class="on">Full licence</span><span>Learner permit</span><span>No</span></p></div>
+        <div class="h-arrow" aria-hidden="true"><span>added</span><span>⋯⋯→</span></div>
+        <div class="h-card"><span class="h-meta">Top of your CV</span><p class="h-added">Full clean driving licence · Can work in Ireland · Available in 2 weeks</p><p class="h-sub">Only answers that help you are added.</p></div>
+      </div>
+    </div>
+
+    <div class="h-feature">
+      <h3>Keep a version for each job, and know which one you sent.</h3>
+      <p class="h-links"><a href="cv-builder.html">CV builder →</a><a href="cv-builder.html#versions">Versions →</a><a href="cv-builder.html">Tracker →</a></p>
+      <div class="h-flow h-tint-sand">
+        <div class="h-card"><span class="h-meta">CV builder</span><p><b>Sarah Byrne · Medical Secretary</b></p><p class="h-sub">Imported from your PDF. Download a clean A4 PDF or Word file.</p></div>
+        <div class="h-arrow" aria-hidden="true"><span>saved as</span><span>⋯⋯→</span></div>
+        <div class="h-card"><span class="h-meta">Versions</span><p class="h-row"><span>Medical Secretary · HSE</span><b class="h-new">New</b></p><p class="h-row h-sub"><span>Receptionist · Riverside</span><span>12 Oct</span></p><p class="h-row h-sub"><span>Admin · Harbour Group</span><span>2 Oct</span></p></div>
+        <div class="h-arrow" aria-hidden="true"><span>sent</span><span>⋯⋯→</span></div>
+        <div class="h-card"><span class="h-meta">Tracker <i class="h-pill h-pill-warn">Interview</i></span><p><b>HSE · Medical Secretary</b></p><p class="h-sub">14 Oct sent “Medical Secretary · HSE”<br>21 Oct interview at 10:30</p></div>
+      </div>
     </div>
   </section>
-  <section class="r-cta">
-    <h2>Free, private, no sign-up.</h2>
-    <a class="btn btn-primary r-btn-lg" href="cv-checker.html">Check my CV free</a>
-    <p class="r-cta-sub">Questions? <a href="faq.html">Read the FAQ</a></p>
+
+  <section class="h-fair">
+    <div class="h-fair-copy">
+      <span class="h-kicker">Fair by design</span>
+      <h2>We check the document. Never the person.</h2>
+      <p>Every flag comes from a written rule with a reason you can read. Nothing is a mystery score, and you decide what to change.</p>
+      <a class="h-link-lime" href="blog/not-getting-interviews.html">How we judge a CV →</a>
+    </div>
+    <ul class="h-promises">
+      <li><span><b>No score, no pass or fail</b>You get a count of fixes and why, never an “ATS score”.</span><i>Always on</i></li>
+      <li><span><b>Your CV stays on your device</b>It’s read in your browser. Nothing is uploaded or saved.</span><i>Always on</i></li>
+      <li><span><b>Never flags gaps, age or nationality</b>The reasons can be private, so we leave them alone.</span><i>Always on</i></li>
+      <li><span><b>Every fix can be dismissed</b>“This doesn’t apply to me” removes it, and tells us the rule needs work.</span><i>Always on</i></li>
+    </ul>
   </section>
-  <footer class="r-foot">
+
+  <section class="h-how">
+    <div class="h-how-head">
+      <div><span class="h-kicker">How it works</span><h2>What happens after you drop in your CV.</h2></div>
+      <p>The same example CV, step by step. It takes seconds.</p>
+    </div>
+    <ol class="h-steps">
+      <li><span>01</span><b>Reads your page</b>PDF or Word, in your browser.</li>
+      <li><span>02</span><b>Runs the checks</b>Rules with a written reason, plus your job advert if you add one.</li>
+      <li><span>03</span><b>Marks your own CV</b>Numbered highlights, latest job first.</li>
+      <li class="h-step-last"><span>04</span><b>You fix, one at a time</b>Then build a clean copy in the builder.</li>
+    </ol>
+  </section>
+
+  <section class="r-section r-vision-strip h-vision">
+    <span class="beta-tag beta-tag-lg">Ongoing project</span>
+    <p><b>This is the first step.</b> We are starting with free tools for job seekers, and building toward recruitment that works better for both sides: candidates who can show what they can do, and employers who can trust what they read.</p>
+    <a class="r-textlink" href="about.html#vision">Where this is going</a>
+  </section>
+
+  <section class="h-dark h-close">
+    <h2>See what a recruiter would notice.</h2>
+    <p>Free, private, no sign-up.</p>
+    <div class="h-ctas">
+      <a class="btn btn-primary r-btn-lg" href="cv-checker.html">Check my CV free</a>
+      <a class="h-btn-ghost" href="faq.html">Read the FAQ</a>
+    </div>
+  </section>
+  </main>
+  <footer class="r-foot h-foot">
     <span>Universal CV ID, open source under the MIT licence</span>
     <span class="spacer"></span>
     <a href="about.html">About and roadmap</a>
