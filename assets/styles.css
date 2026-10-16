@@ -1235,7 +1235,9 @@ body { background: var(--bg); color: var(--ink); }
 .r-dark-lede { color: #BDBBB8; font-size: 17px; margin-top: 14px; max-width: 40em; }
 .r-next { list-style: none; padding: 0; margin: 34px 0 0; border-top: 1px solid #343231; }
 .r-next li { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 16px; align-items: baseline; padding: 20px 0; border-bottom: 1px solid #343231; }
-.r-next a { color: #fff; text-decoration: none; display: grid; gap: 4px; }
+.r-next a, .r-next-item { color: #fff; text-decoration: none; display: grid; gap: 4px; }
+.r-next-item b { font: 700 20px/1.2 var(--display); }
+.r-next-item span { color: #BDBBB8; }
 .r-next a b { font: 700 20px/1.2 var(--display); }
 .r-next a span { color: #BDBBB8; }
 .r-next a:hover b { text-decoration: underline; text-underline-offset: 4px; }
@@ -1634,3 +1636,34 @@ ol.words li span { display: block; }
 .h-btn-ghost { border: 1px solid #4A4F5E; color: #FFFFFF; text-decoration: none; font-weight: 600; font-size: 16px; padding: .95rem 1.5rem; border-radius: 999px; }
 .h-btn-ghost:hover { border-color: #FFFFFF; }
 .h-foot { margin-top: 0 !important; border-top: 0 !important; }
+
+/* v30: two-column template, a page with an empty sidebar uses the full width */
+.t-ledger.cv-noside .cv-cols { grid-template-columns: minmax(0, 1fr); }
+.t-ledger.cv-noside .cv-side { display: none; }
+.t-ledger.cv-noside .cv-main { padding-right: var(--cv-margin); }
+
+/* v30: skill groups */
+.sk-groups { display: grid; gap: .7rem; }
+.sk-group { display: grid; gap: .4rem; }
+.sk-head { display: flex; align-items: center; gap: .4rem; }
+.sk-head b { font-size: 13px; color: var(--ink-2); }
+.sk-name { flex: 1; min-width: 0; font-weight: 600; padding: .35rem .5rem; }
+.sk-add { display: grid; gap: .4rem; margin-top: .7rem; }
+.sk-add .chips { align-items: center; }
+.sk-add input { flex: 1 1 160px; min-width: 0; padding: .35rem .55rem; }
+.chip.skill { position: relative; overflow: visible; }
+.sk-menu { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; display: grid; min-width: 180px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); padding: 4px; }
+.sk-menu button { text-align: left; padding: .45rem .6rem !important; border-radius: 6px; font-size: 13.5px !important; color: var(--ink) !important; }
+.sk-menu button:hover, .sk-menu button:focus-visible { background: var(--surface-2); }
+.seg-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.seg-row .btn[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+/* grouped skills on the CV */
+.cv-skg { margin: 0 0 .25em; }
+.cv-skg strong { font-weight: 700; }
+.cv-skg-h { margin: 0 0 .3em; font-weight: 700; font-size: .95em; }
+.t-ledger .cv-side .cv-skg strong { display: block; }
+/* v30: overflow warning above the page */
+.fit-chip { display: inline-flex; align-items: center; gap: .5rem; border-radius: 999px; padding: .2rem .25rem .2rem .7rem; font-size: 12.5px; font-weight: 500; }
+.fit-chip.warn { background: var(--warn-soft); color: var(--warn); }
+.fit-chip.ok { background: var(--good-soft); color: var(--good); }
+.fit-chip button { border: 0; border-radius: 999px; background: var(--surface); color: var(--ink); font: 600 12.5px var(--font); padding: .25rem .65rem; cursor: pointer; }

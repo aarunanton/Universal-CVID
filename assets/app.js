@@ -117,7 +117,56 @@
     const r = res();
     if (tab === 'letter') { pages = UCV.renderLetter(paper, r, active(), store.id); $('#pageCount').textContent = 'Cover letter · A4'; }
     else { pages = UCV.paginate(paper, Object.assign(UCV.resolve(store, active(), { keep: editKeep }), { jd: r.jd }), store.id); $('#pageCount').textContent = `Click any text to edit · ${pages} page${pages > 1 ? 's' : ''} · A4`; armPage(); }
+    renderFitChip(tab === 'letter' ? null : overflowInfo(paper, pages));
     fitPaper();
+  }
+  // ---------- "runs onto another page" warning and one-click Fit ----------
+  let fitUndo = null; // { vid, design, pages } from the last Fit, so it can be undone in one step
+  function overflowInfo(paper, n) {
+    if (n < 2) return null;
+    const pg = paper.querySelectorAll('.cv-page')[n - 1];
+    if (!pg) return null;
+    const cols = [...pg.querySelectorAll('.cv-flow, .cv-side')];
+    const box = cols[0]; if (!box) return null;
+    const used = Math.max(...cols.map(c => [...c.children].reduce((h, el) => h + el.getBoundingClientRect().height, 0)));
+    const inner = box.getBoundingClientRect().height || 1;
+    if (used / inner > 0.4) return null; // the last page is well used: this is a real two-page CV, not a spill-over
+    const cs = getComputedStyle(pg), line = (parseFloat(cs.fontSize) || 13) * (parseFloat(cs.getPropertyValue('--cv-line')) || 1.45);
+    const scale = pg.getBoundingClientRect().height / (pg.offsetHeight || 1);
+    return { page: n, lines: Math.max(1, Math.round(used / scale / line)) };
+  }
+  function renderFitChip(info) {
+    const el = $('#fitChip'); if (!el) return;
+    const v = active();
+    if (fitUndo && fitUndo.vid === v.vid && pages < fitUndo.pages) {
+      el.hidden = false; el.className = 'fit-chip ok';
+      el.innerHTML = `Fits on ${pages} page${pages > 1 ? 's' : ''}<button data-action="fit-undo">Undo</button>`;
+      return;
+    }
+    if (!info) { el.hidden = true; return; }
+    el.hidden = false; el.className = 'fit-chip warn';
+    el.innerHTML = `Runs onto page ${info.page} by about ${info.lines} line${info.lines > 1 ? 's' : ''}<button data-action="fit-pages">Fit to ${info.page - 1} page${info.page > 2 ? 's' : ''}</button>`;
+  }
+  function fitToPages() {
+    const v = active(), orig = JSON.parse(JSON.stringify(v.design)), target = pages - 1;
+    const host = document.createElement('div'); host.style.cssText = 'position:absolute;left:-20000px;top:0;visibility:hidden'; document.body.appendChild(host);
+    const base = UCV.resolve(store, v);
+    const d = Object.assign({}, orig);
+    // tighten spacing first, then line height and margins, and only then the text size (never below 9 pt)
+    const steps = [x => { x.gap = Math.max(8, x.gap - 6); }, x => { x.line = Math.max(1.3, +(x.line - 0.1).toFixed(2)); }, x => { x.margin = Math.max(12, x.margin - 3); },
+      x => { x.size = Math.max(9.5, x.size - 0.5); }, x => { x.gap = 6; x.line = Math.max(1.2, +(x.line - 0.1).toFixed(2)); }, x => { x.margin = Math.max(10, x.margin - 2); }, x => { x.size = Math.max(9, x.size - 0.5); }];
+    let ok = false;
+    for (const step of steps) {
+      step(d);
+      const n = UCV.paginate(host, Object.assign({}, base, { design: d }), store.id);
+      if (n <= target) { ok = true; break; }
+    }
+    host.remove();
+    if (!ok) { toast('It would need text smaller than 9 pt. Try hiding an older role or a few bullets instead.', true); return; }
+    fitUndo = { vid: v.vid, design: orig, pages };
+    v.design = Object.assign(v.design, d);
+    persist(); renderAll();
+    toast(`Now fits on ${target} page${target > 1 ? 's' : ''}. Spacing was tightened first, then text size.`);
   }
   // ---------- editing on the page ----------
   let editKeep = null, pageBusy = false;
@@ -259,6 +308,33 @@
         </div>
         ${itemFields(section, path + '.' + i, it)}
       </div>`).join('') : `<p class="empty">Nothing here yet.</p>`;
+  }
+  // Skills, optionally in named groups ("Technical skills", "Interpersonal skills")
+  let skillMove = null; // id of the skill whose "move to group" menu is open
+  function skillChip(s, i, groups) {
+    const menu = skillMove === s.id ? `<span class="sk-menu" role="menu" aria-label="Move ${esc(s.name)} to">${['', ...groups].filter(g => g !== (s.group || '')).map(g => `<button role="menuitem" data-action="skill-to-group" data-i="${i}" data-group="${esc(g)}">${g ? esc(g) : 'No group'}</button>`).join('')}</span>` : '';
+    return `<span class="chip skill${hidden(s.id) ? ' off' : ''}"><button class="skill-name" data-action="toggle" data-id="${s.id}" aria-pressed="${!hidden(s.id)}" title="Click to show or hide in this version">${esc(s.name)}</button>${groups.length ? `<button data-action="skill-move" data-id="${s.id}" aria-label="Move ${esc(s.name)} to another group" aria-expanded="${skillMove === s.id}">⇄</button>` : ''}<button data-action="remove-skill" data-i="${i}" aria-label="Remove ${esc(s.name)}">×</button>${menu}</span>`;
+  }
+  function skillsEditor(m) {
+    const groups = m.skillGroups || [];
+    const idx = m.skills.map((s, i) => ({ s, i }));
+    const box = (g, gi) => {
+      const list = idx.filter(o => (o.s.group || '') === g);
+      if (!g && groups.length && !list.length) return '';
+      const head = g ? `<div class="sk-head"><input class="sk-name" type="text" value="${esc(g)}" data-skgroup="${gi}" aria-label="Group name"><span class="hint">${list.length}</span>
+          <button class="icon-btn" data-action="skgroup-move" data-gi="${gi}" data-dir="-1" aria-label="Move group up" ${gi === 0 ? 'disabled' : ''}>↑</button>
+          <button class="icon-btn" data-action="skgroup-move" data-gi="${gi}" data-dir="1" aria-label="Move group down" ${gi === groups.length - 1 ? 'disabled' : ''}>↓</button>
+          <button class="icon-btn" data-action="skgroup-del" data-gi="${gi}" aria-label="Remove group ${esc(g)} (its skills stay, without a group)">×</button></div>`
+        : (groups.length ? `<div class="sk-head"><b>Not in a group</b></div>` : '');
+      return `<div class="sk-group">${head}<div class="tag-input">${list.map(o => skillChip(o.s, o.i, groups)).join('')}
+          <input class="skillInput" type="text" data-skadd="${esc(g)}" placeholder="${g ? `Add to ${esc(g)}, press Enter` : 'Type a skill, press Enter'}" aria-label="Add a skill${g ? ' to ' + esc(g) : ''}"></div></div>`;
+    };
+    const used = new Set(groups.map(g => g.toLowerCase()));
+    const sugg = ['Technical skills', 'Interpersonal skills', 'Tools and software', 'Industry knowledge'].filter(g => !used.has(g.toLowerCase()));
+    return `<div class="sk-groups" id="skillBox">${box('', -1)}${groups.map((g, gi) => box(g, gi)).join('')}</div>
+        <div class="sk-add"><span class="field">Add a group</span><div class="chips">${sugg.map(g => `<button class="chip chip-miss" data-action="skgroup-add" data-name="${esc(g)}">+ ${esc(g)}</button>`).join('')}
+          <input id="skGroupNew" type="text" placeholder="Your own group name" aria-label="New group name"></div></div>
+        <p class="hint">Click a skill to hide it from this version. Use ⇄ to move a skill to another group. Paste a comma-separated list to add several.</p>`;
   }
   function groupShell(key, label, count, body, extra = '') {
     return `<details class="group" data-group="${key}" ${openGroups.has(key) ? 'open' : ''}>
@@ -443,12 +519,7 @@
         </div>`)}
       ${listGroup('work', 'Experience', 'Add role')}
       ${listGroup('education', 'Education', 'Add qualification')}
-      ${groupShell('skills', 'Skills', shownCount(m.skills), `
-        <div class="tag-input" id="skillBox">
-          ${m.skills.map((s, i) => `<span class="chip skill${hidden(s.id) ? ' off' : ''}"><button class="skill-name" data-action="toggle" data-id="${s.id}" aria-pressed="${!hidden(s.id)}" title="Click to show or hide in this version">${esc(s.name)}</button><button data-action="remove-skill" data-i="${i}" aria-label="Remove ${esc(s.name)}">×</button></span>`).join('')}
-          <input id="skillInput" type="text" placeholder="Type a skill, press Enter" aria-label="Add a skill">
-        </div>
-        <p class="hint">Click a skill to hide it from this version. Paste a comma-separated list to add several.</p>`)}
+      ${groupShell('skills', 'Skills', shownCount(m.skills), skillsEditor(m))}
       ${listGroup('projects', 'Projects', 'Add project')}
       ${listGroup('certificates', 'Certifications', 'Add certification')}
       ${listGroup('languages', 'Languages', 'Add language')}
@@ -496,6 +567,10 @@
           <div class="grid-2">${slider('Page margins', 'margin', 8, 25, 1, ' mm')}${slider('Space between sections', 'gap', 6, 28, 1, ' px')}</div>
           <div><span class="field">Accent colour${d.template === 'plain' ? ' <span class="hint">Plain ATS always prints in black</span>' : ''}</span>
             <div class="swatches" style="margin-top:.4rem">${UCV.ACCENTS.map(c => `<button class="swatch" style="background:${c}" data-action="set-accent" data-color="${c}" aria-label="Accent ${c}" aria-pressed="${d.accent === c}"></button>`).join('')}</div></div>
+          ${(store.master.skillGroups || []).length ? `<div><span class="field">Skill groups on the CV</span>
+            <div class="seg-row" role="group" aria-label="How skill groups print" style="margin-top:.4rem">
+              <button class="btn btn-sm" data-action="set-skillstyle" data-v="list" aria-pressed="${d.skillStyle !== 'tags'}">Label and list</button>
+              <button class="btn btn-sm" data-action="set-skillstyle" data-v="tags" aria-pressed="${d.skillStyle === 'tags'}">Tags</button></div></div>` : ''}
           <div class="row">
             <label class="switch"><input type="checkbox" data-dbool="photo" ${d.photo ? 'checked' : ''} ${store.master.basics.photo ? '' : 'disabled'}> Show photo${store.master.basics.photo ? '' : ' <span class="hint">(add one under Content)</span>'}</label>
           </div>
@@ -851,21 +926,63 @@
     let joins = 0;
     const RANGEISH = /\b(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?\d{4}\s*(?:-|–|—|to)\s*(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?(?:\d{4}|present|current|now)\b/i;
     const DOT = /^[•\-*·▪◦●○■➢►✓]$/;
+    const pagesCols = [];
     for (let p = 1; p <= doc.numPages; p++) {
-      if (p > 1) out.push('\f');
       const content = await (await doc.getPage(p)).getTextContent();
+      const items = content.items.filter(it => it.str && it.str.trim()).map(it => ({ x: it.transform[4], y: it.transform[5], s: it.str, w: it.width || 0, h: Math.hypot(it.transform[0], it.transform[1]) || 10 }));
+      if (!items.length) { pagesCols.push({ all: [] }); continue; }
+      // Two-column CVs: find an empty vertical strip between the columns and read each column top to bottom,
+      // so sidebar text is not glued onto the main column's lines.
+      pagesCols.push(splitColumns(items));
+    }
+    // In a two-column CV, read the whole main column (all pages) before the whole sidebar, so a section that
+    // continues onto page 2 stays in one piece.
+    const twoCol = pagesCols.some(g => g.cols);
+    if (twoCol) {
+      pagesCols.forEach((g, i) => { if (i) out.push('\f'); emitRows(g.above); emitRows(g.left); emitRows(g.below); });
+      pagesCols.forEach(g => { out.push('\f'); emitRows(g.right); });
+    } else pagesCols.forEach((g, i) => { if (i) out.push('\f'); emitRows(g.all); });
+    function splitColumns(items) {
+      const L = Math.min(...items.map(i => i.x)), R = Math.max(...items.map(i => i.x + i.w)), W = R - L;
+      const one = { all: items };
+      if (W < 200 || items.length < 20) return one;
+      let best = null, run = null;
+      for (let x = L + W * 0.3; x <= L + W * 0.8; x += 2) {
+        const cross = items.filter(i => i.x < x && i.x + i.w > x).length;
+        if (cross <= 2) { run = run || { a: x, b: x }; run.b = x; if (!best || run.b - run.a > best.b - best.a) best = { a: run.a, b: run.b }; }
+        else run = null;
+      }
+      if (!best || best.b - best.a < 8) return one;
+      const mid = (best.a + best.b) / 2;
+      const left = items.filter(i => i.x + i.w <= mid), right = items.filter(i => i.x >= mid), full = items.filter(i => i.x < mid && i.x + i.w > mid);
+      const chars = a => a.reduce((n, i) => n + i.s.length, 0), total = chars(items);
+      const rowsOf = a => new Set(a.map(i => Math.round(i.y / 3))).size;
+      if (chars(left) < total * 0.15 || chars(right) < total * 0.12 || rowsOf(left) < 5 || rowsOf(right) < 5) return one;
+      // The sidebar's own lines share one left edge. Anything higher up than the first of them (a name, a contact
+      // line that happens to cross into the sidebar's half) is the page header, read first.
+      const xs = right.map(i => Math.round(i.x)), count = {};
+      xs.forEach(x => { count[x] = (count[x] || 0) + 1; });
+      const sideX = +Object.keys(count).sort((a, b) => count[b] - count[a])[0];
+      const aligned = right.filter(i => Math.abs(i.x - sideX) < 14);
+      const colTop = aligned.length ? Math.max(...aligned.map(i => i.y)) : Math.max(...right.map(i => i.y));
+      const isHead = i => i.y > colTop + 2;
+      return { cols: true,
+        above: items.filter(i => isHead(i)),
+        left: left.filter(i => !isHead(i)), right: right.filter(i => !isHead(i)),
+        below: full.filter(i => !isHead(i)) };
+    }
+    function emitRows(items) {
+      if (!items || !items.length) return;
       const rows = [];
-      content.items.forEach(it => {
-        if (!it.str || !it.str.trim()) return;
-        const y = it.transform[5];
-        let row = rows.find(r => Math.abs(r.y - y) < 2.5);
-        if (!row) { row = { y, parts: [] }; rows.push(row); }
-        row.parts.push({ x: it.transform[4], s: it.str, w: it.width || 0, h: Math.hypot(it.transform[0], it.transform[1]) || 10 });
+      items.forEach(it => {
+        let row = rows.find(r => Math.abs(r.y - it.y) < 2.5);
+        if (!row) { row = { y: it.y, parts: [] }; rows.push(row); }
+        row.parts.push(it);
       });
       rows.forEach(r => r.parts.sort((a, b) => a.x - b.x));
-      if (!rows.length) continue;
-      const base = Math.min(...rows.map(r => r.parts[0].x)); // left margin of the page
-      const right = Math.max(...rows.map(r => { const l = r.parts[r.parts.length - 1]; return l.x + l.w; })); // right margin
+      if (!rows.length) return;
+      const base = Math.min(...rows.map(r => r.parts[0].x)); // left margin of this column
+      const right = Math.max(...rows.map(r => { const l = r.parts[r.parts.length - 1]; return l.x + l.w; })); // right margin of this column
       let prev = null;
       rows.sort((a, b) => b.y - a.y).forEach(r => {
         let line = '', end = null;
@@ -894,6 +1011,7 @@
     pdfText.joins = joins;
     return out.join('\n');
   }
+  window.__ucvPdfText = pdfText; // used by the import tests
   async function docxText(file) {
     await loadScript(LIBS.mammoth);
     // Word keeps bullets as list formatting, not as text, so read the structure and put the bullets back
@@ -973,14 +1091,14 @@
   }
 
   // ---------- actions ----------
-  function addSkills(raw, onlyThisVersion) {
+  function addSkills(raw, onlyThisVersion, group) {
     const m = store.master;
     const added = raw.split(/[,\n;]/).map(s => s.trim()).filter(Boolean);
     let n = 0;
     added.forEach(name => {
       const hit = m.skills.find(k => k.name.toLowerCase() === name.toLowerCase());
       if (hit) { if (hidden(hit.id)) { active().hidden = active().hidden.filter(x => x !== hit.id); n++; } return; }
-      const s = { id: UCV.uid('s'), name }; m.skills.push(s); n++;
+      const s = { id: UCV.uid('s'), name, group: group || '' }; m.skills.push(s); n++;
       if (onlyThisVersion) store.versions.forEach(v => { if (v !== active()) v.hidden.push(s.id); });
     });
     if (n) persist();
@@ -1087,7 +1205,20 @@
         break;
       }
       case 'remove-bullet': getPath(m, btn.dataset.path).splice(i, 1); redraw(); break;
-      case 'remove-skill': m.skills.splice(i, 1); redraw(); $('#skillInput')?.focus(); break;
+      case 'remove-skill': m.skills.splice(i, 1); redraw(); break;
+      case 'skill-move': skillMove = skillMove === btn.dataset.id ? null : btn.dataset.id; renderPanel(); $(`[data-action="skill-to-group"]`)?.focus(); break;
+      case 'skill-to-group': if (m.skills[i]) m.skills[i].group = btn.dataset.group || ''; skillMove = null; redraw(); break;
+      case 'skgroup-add': case 'skgroup-add-own': {
+        const name = (btn.dataset.name || '').trim();
+        m.skillGroups = m.skillGroups || [];
+        if (name && !m.skillGroups.some(g => g.toLowerCase() === name.toLowerCase())) m.skillGroups.push(name);
+        redraw(); setTimeout(() => $(`input[data-skadd="${CSS.escape(name)}"]`)?.focus(), 0); break;
+      }
+      case 'skgroup-del': { const g = m.skillGroups[+btn.dataset.gi]; m.skills.forEach(k => { if (k.group === g) k.group = ''; }); m.skillGroups.splice(+btn.dataset.gi, 1); redraw(); break; }
+      case 'skgroup-move': { const a = +btn.dataset.gi, b = a + +btn.dataset.dir; if (b >= 0 && b < m.skillGroups.length) { [m.skillGroups[a], m.skillGroups[b]] = [m.skillGroups[b], m.skillGroups[a]]; } redraw(); break; }
+      case 'fit-pages': fitToPages(); break;
+      case 'fit-undo': if (fitUndo && fitUndo.vid === v.vid) { v.design = Object.assign(v.design, fitUndo.design); fitUndo = null; redraw(); toast('Spacing put back as it was.'); } break;
+      case 'set-skillstyle': v.design.skillStyle = btn.dataset.v === 'tags' ? 'tags' : 'list'; redraw(); break;
       case 'add-section': {
         const c = { id: UCV.uid('c'), title: btn.dataset.title || 'New section', items: [Object.assign(UCV.blankItem('customItem'))] };
         m.custom.push(c); store.versions.forEach(x => UCV.fixOrder(store, x)); openGroups.add('c:' + c.id); redraw();
@@ -1196,6 +1327,11 @@
   document.addEventListener('change', e => {
     const t = e.target, v = active(), d = t.dataset;
     if (t.id === 'versionSelect') { store.active = t.value; persist(); renderAll(); return; }
+    if ('skgroup' in d) { // rename a skill group
+      const m = store.master, gi = +d.skgroup, old = m.skillGroups[gi], name = t.value.trim().slice(0, 60);
+      if (old != null && name && !m.skillGroups.some((g, j) => j !== gi && g.toLowerCase() === name.toLowerCase())) { m.skillGroups[gi] = name; m.skills.forEach(k => { if (k.group === old) k.group = name; }); }
+      persist(); renderPanel(); renderPreview(); return;
+    }
     if (d.toggle) { toggleId(d.toggle); renderPanel(); renderPreview(); renderBar(); return; }
     if (d.share) { store.share = store.share || { email: true, phone: false, location: true }; store.share[d.share] = t.checked; UCV.save(store); renderPanel(); return; }
     if (d.sec) { v.hiddenSections = t.checked ? v.hiddenSections.filter(k => k !== d.sec) : [...v.hiddenSections, d.sec]; persist(); renderPanel(); renderPreview(); renderBar(); return; }
@@ -1210,10 +1346,18 @@
 
   document.addEventListener('keydown', e => {
     const t = e.target;
-    if (t.id === 'skillInput' && (e.key === 'Enter' || e.key === ',')) {
+    if (t.classList && t.classList.contains('skillInput') && (e.key === 'Enter' || e.key === ',')) {
       e.preventDefault();
-      if (addSkills(t.value)) { renderPanel(); renderPreview(); renderBar(); $('#skillInput').focus(); } else t.value = '';
+      const g = t.dataset.skadd || '';
+      if (addSkills(t.value, false, g)) { renderPanel(); renderPreview(); renderBar(); $(`input[data-skadd="${CSS.escape(g)}"]`)?.focus(); } else t.value = '';
     }
+    if (t.id === 'skGroupNew' && e.key === 'Enter') {
+      e.preventDefault();
+      const name = t.value.trim().slice(0, 60);
+      const m = store.master; m.skillGroups = m.skillGroups || [];
+      if (name && !m.skillGroups.some(g => g.toLowerCase() === name.toLowerCase())) { m.skillGroups.push(name); persist(); renderPanel(); renderPreview(); setTimeout(() => $(`input[data-skadd="${CSS.escape(name)}"]`)?.focus(), 0); }
+    }
+    if (e.key === 'Escape' && skillMove) { skillMove = null; renderPanel(); }
     if (t.dataset && t.dataset.bullet && e.key === 'Enter' && !e.shiftKey) { // Enter makes the next bullet
       e.preventDefault();
       const list = getPath(store.master, t.dataset.bullet), i = +t.dataset.i;
@@ -1229,7 +1373,7 @@
   document.addEventListener('paste', e => {
     const t = e.target;
     const text = (e.clipboardData || window.clipboardData).getData('text');
-    if (t.id === 'skillInput' && /[,\n;]/.test(text)) { e.preventDefault(); if (addSkills(text)) { renderPanel(); renderPreview(); renderBar(); $('#skillInput').focus(); } return; }
+    if (t.classList && t.classList.contains('skillInput') && /[,\n;]/.test(text)) { e.preventDefault(); const g = t.dataset.skadd || ''; if (addSkills(text, false, g)) { renderPanel(); renderPreview(); renderBar(); $(`input[data-skadd="${CSS.escape(g)}"]`)?.focus(); } return; }
     if (t.dataset && t.dataset.bullet && /\n/.test(text.trim())) { // paste several lines = several bullets
       e.preventDefault();
       const list = getPath(store.master, t.dataset.bullet), i = +t.dataset.i;

@@ -37,7 +37,7 @@
   const DATE_FORMATS = [
     { id: 'short', name: 'Jan 2025' }, { id: 'long', name: 'January 2025' }, { id: 'num', name: '01/2025' }
   ];
-  const DEFAULT_DESIGN = { template: 'meridian', accent: ACCENTS[0], font: 'auto', size: 10, line: 1.45, margin: 15, gap: 16, dateFmt: 'short', photo: false, showId: true };
+  const DEFAULT_DESIGN = { template: 'meridian', accent: ACCENTS[0], font: 'auto', size: 10, line: 1.45, margin: 15, gap: 16, dateFmt: 'short', photo: false, showId: true, skillStyle: 'list' };
   const STATUSES = ['Saved', 'Applied', 'Interview', 'Offer', 'Rejected'];
 
   // ---------- helpers ----------
@@ -137,7 +137,8 @@
       size: clampN(d.size, 8, 12, D.size), line: clampN(d.line, 1, 2, D.line),
       margin: clampN(d.margin, 5, 30, D.margin), gap: clampN(d.gap, 0, 40, D.gap),
       dateFmt: DATE_FORMATS.some(f => f.id === d.dateFmt) ? d.dateFmt : D.dateFmt,
-      photo: d.photo === true, showId: false
+      photo: d.photo === true, showId: false,
+      skillStyle: d.skillStyle === 'tags' ? 'tags' : 'list'
     };
   }
   function cleanOrder(o) {
@@ -152,7 +153,8 @@
       work: arr(c.work).map(obj).map(w => ({ position: str(w.position, 200), company: str(w.company, 200), location: str(w.location, 200), startDate: str(w.startDate, 10), endDate: str(w.endDate, 10),
         highlights: (Array.isArray(w.highlights) ? w.highlights : lines(str(w.highlights, 20000))).slice(0, 60).map(h => str(h, 1500)).filter(Boolean) })),
       education: arr(c.education).map(obj).map(e => ({ degree: str(e.degree, 300), institution: str(e.institution, 300), year: str(e.year, 20), details: str(e.details, 2000) })),
-      skills: arr(c.skills).map(s => str(s, 120)).filter(Boolean),
+      skills: arr(c.skills).map(s => str(s && typeof s === 'object' ? s.name : s, 120)).filter(Boolean),
+      skillGroups: arr(c.skillGroups).map(obj).map(g => ({ name: str(g.name, 80), items: arr(g.items).map(x => str(x, 120)).filter(Boolean) })).filter(g => g.items.length).slice(0, 30),
       projects: arr(c.projects).map(obj).map(p => ({ name: str(p.name, 300), description: str(p.description, 2000), url: str(p.url, 300) })),
       certificates: arr(c.certificates).map(obj).map(x => ({ name: str(x.name, 300), issuer: str(x.issuer, 300), date: str(x.date, 20) })),
       languages: arr(c.languages).map(obj).map(l => ({ language: str(l.language, 100), fluency: str(l.fluency, 100) })),
@@ -166,7 +168,7 @@
   function blankMaster() {
     return {
       basics: { name: '', email: '', phone: '', location: '', url: '', photo: '' },
-      work: [], education: [], skills: [], projects: [], certificates: [], languages: [], custom: []
+      work: [], education: [], skills: [], skillGroups: [], projects: [], certificates: [], languages: [], custom: []
     };
   }
   function blankItem(section) {
@@ -202,7 +204,8 @@
           bullets: B('Designed onboarding for 120,000 small-business users', 'Responsible for the mobile app settings screens', 'Cut support tickets on invoicing by 18% through clearer flows') })
       ],
       education: [I({ degree: 'MSc Interaction Design', institution: 'University of Limerick', year: '2017', details: '' })],
-      skills: ['Figma', 'User research', 'Design systems', 'Prototyping', 'Accessibility (WCAG 2.2)', 'SQL'].map(name => ({ id: uid('s'), name })),
+      skills: [['Figma', 'Design'], ['Design systems', 'Design'], ['Prototyping', 'Design'], ['Accessibility (WCAG 2.2)', 'Design'], ['User research', 'Research'], ['Usability testing', 'Research'], ['SQL', 'Tools'], ['Jira', 'Tools']].map(([name, group]) => ({ id: uid('s'), name, group })),
+      skillGroups: ['Design', 'Research', 'Tools'],
       projects: [I({ name: 'Open accessibility checklist', description: 'Free checklist used by 2,000+ designers', url: '' })],
       certificates: [I({ name: 'Certified Usability Analyst', issuer: 'Human Factors International', date: '2019' })],
       languages: [I({ language: 'English', fluency: 'Native' }), I({ language: 'French', fluency: 'Professional' })],
@@ -235,7 +238,12 @@
     m.work = (cv.work || []).map(w => ({ id: uid('i'), position: w.position || '', company: w.company || '', location: w.location || '', startDate: w.startDate || '', endDate: w.endDate || '',
       bullets: (Array.isArray(w.highlights) ? w.highlights : lines(w.highlights)).map(text => ({ id: uid('b'), text })) }));
     m.education = (cv.education || []).map(e => ({ id: uid('i'), degree: e.degree || '', institution: e.institution || '', year: String(e.year || ''), details: e.details || '' }));
-    m.skills = (cv.skills || []).filter(Boolean).map(name => ({ id: uid('s'), name: String(name) }));
+    if (Array.isArray(cv.skillGroups) && cv.skillGroups.some(g => g.name)) {
+      const seen = new Set();
+      cv.skillGroups.forEach(g => (g.items || []).forEach(name => { const k = String(name).toLowerCase(); if (!name || seen.has(k)) return; seen.add(k); m.skills.push({ id: uid('s'), name: String(name), group: g.name || '' }); }));
+      (cv.skills || []).forEach(name => { if (name && !seen.has(String(name).toLowerCase())) { seen.add(String(name).toLowerCase()); m.skills.push({ id: uid('s'), name: String(name), group: '' }); } });
+      m.skillGroups = [...new Set(cv.skillGroups.map(g => g.name).filter(Boolean))];
+    } else m.skills = (cv.skills || []).filter(Boolean).map(name => ({ id: uid('s'), name: String(name), group: '' }));
     m.projects = (cv.projects || []).map(p => ({ id: uid('i'), name: p.name || '', description: p.description || '', url: p.url || '' }));
     m.certificates = (cv.certificates || []).map(c => ({ id: uid('i'), name: c.name || '', issuer: c.issuer || '', date: String(c.date || '') }));
     m.languages = (cv.languages || []).map(l => ({ id: uid('i'), language: l.language || '', fluency: l.fluency || '' }));
@@ -320,6 +328,9 @@
       fixOrder(store, v);
     });
     store.master.basics.photo = safePhoto(store.master.basics.photo);
+    const mm = store.master;
+    mm.skillGroups = Array.isArray(mm.skillGroups) ? mm.skillGroups.filter(g => typeof g === 'string' && g.trim()) : [];
+    mm.skills.forEach(k => { k.group = typeof k.group === 'string' ? k.group : ''; if (k.group && !mm.skillGroups.includes(k.group)) mm.skillGroups.push(k.group); });
     store.applications = arr(store.applications);
     store.applications.forEach(a => { a.url = safeUrl(a.url); });
     store.share = Object.assign({ email: true, phone: false, location: true }, obj(store.share)); // which contact details go into shared links
@@ -378,6 +389,8 @@
       custom: m.custom.map((c, ci) => ({ key: 'c:' + c.id, title: c.title, items: idx(c.items).map(({ x: it, i }) => tag({ title: it.title, sub: it.sub, date: it.date, text: it.text }, `custom.${ci}.items.${i}`)) }))
     };
     if (ed) cv._se = skills.map(o => `skills.${o.i}.name`);
+    const names = ['', ...(m.skillGroups || [])];
+    cv.skillGroups = names.map(g => ({ name: g, items: skills.filter(o => (o.x.group || '') === g).map(o => o.x.name), paths: ed ? skills.filter(o => (o.x.group || '') === g).map(o => `skills.${o.i}.name`) : null })).filter(g => g.items.length);
     return { cv, order: v.order.filter(k => !v.hiddenSections.includes(k)), design: v.design, name: v.name };
   }
 
@@ -400,7 +413,12 @@
         items = cv.education.filter(e => e.degree || e.institution).map(e => ({
           head: `<div class="cv-row"><strong${A(e, 'degree')}>${esc(e.degree || 'Qualification')}</strong><span class="cv-date"${A(e, 'year')}>${esc(e.year)}</span></div><div class="cv-sub"${A(e, 'institution')}>${esc(e.institution)}</div>${e.details ? `<p class="cv-text"${A(e, 'details')}>${fmt(e.details)}</p>` : ''}`, bullets: [] }));
       } else if (key === 'skills') {
-        if (cv.skills.length) items = [{ head: `<ul class="cv-tags">${cv.skills.map((s, i) => `<li${cv._se ? ` data-e="m:${cv._se[i]}"` : ''}>${esc(s)}</li>`).join('')}</ul>`, bullets: [] }];
+        const groups = (cv.skillGroups && cv.skillGroups.length) ? cv.skillGroups : (cv.skills.length ? [{ name: '', items: cv.skills, paths: cv._se }] : []);
+        const named = groups.some(g => g.name);
+        const E = (g, i) => g.paths && g.paths[i] ? ` data-e="m:${g.paths[i]}"` : '';
+        if (!named) { if (cv.skills.length) items = [{ head: `<ul class="cv-tags">${cv.skills.map((s, i) => `<li${cv._se ? ` data-e="m:${cv._se[i]}"` : ''}>${esc(s)}</li>`).join('')}</ul>`, bullets: [] }]; }
+        else if (design.skillStyle === 'tags') items = groups.map(g => ({ head: (g.name ? `<p class="cv-skg-h">${esc(g.name)}</p>` : '') + `<ul class="cv-tags">${g.items.map((s, i) => `<li${E(g, i)}>${esc(s)}</li>`).join('')}</ul>`, bullets: [] }));
+        else items = groups.map(g => ({ head: `<p class="cv-skg">${g.name ? `<strong>${esc(g.name)}:</strong> ` : ''}${g.items.map((s, i) => `<span${E(g, i)}>${esc(s)}</span>`).join(', ')}</p>`, bullets: [], compact: true }));
       } else if (key === 'projects') {
         items = cv.projects.filter(p => p.name).map(p => ({
           head: `<div class="cv-row"><strong${A(p, 'name')}>${esc(p.name)}</strong>${p.url ? `<span class="cv-date">${safeUrl(p.url) ? `<a href="${esc(safeUrl(p.url))}" target="_blank" rel="noopener noreferrer">${esc(p.url)}</a>` : esc(p.url)}</span>` : ''}</div>${p.description ? `<p class="cv-text"${A(p, 'description')}>${fmt(p.description)}</p>` : ''}`, bullets: [] }));
@@ -487,11 +505,8 @@
     let cur = newPage();
     const secs = sectionsData(cv, order, design);
     let main = secs;
-    if (tpl === 'ledger') {
-      main = secs.filter(s => !SIDEBAR_SECTIONS.includes(s.key));
-      cur.side.innerHTML = secs.filter(s => SIDEBAR_SECTIONS.includes(s.key)).map(s =>
-        `<section class="cv-sec"><h2 class="cv-h">${esc(s.title)}</h2><div class="cv-body">${s.items.map(i => `<div class="cv-item${i.compact ? ' cv-compact' : ''}">${i.head}</div>`).join('')}</div></section>`).join('');
-    }
+    const sideSecs = tpl === 'ledger' ? secs.filter(s => SIDEBAR_SECTIONS.includes(s.key)) : [];
+    if (tpl === 'ledger') main = secs.filter(s => !SIDEBAR_SECTIONS.includes(s.key));
     main.forEach(sec => {
       let s = openSection(sec, false);
       cur.flow.appendChild(s.el);
@@ -517,6 +532,48 @@
         }
       });
     });
+    // Two-column template: the sidebar flows onto the next page instead of running off the bottom.
+    if (sideSecs.length) {
+      let pi = 0;
+      const sideOver = p => p.side.scrollHeight > p.side.clientHeight + 1;
+      const pageAt = i => pages[i] || newPage();
+      let sp = pageAt(0);
+      const openSide = (sec, cont) => {
+        const el = mk('section', 'cv-sec' + (cont ? ' cv-cont' : ''));
+        el.appendChild(mk('h2', 'cv-h', esc(sec.title)));
+        const body = mk('div', 'cv-body'); el.appendChild(body);
+        sp.side.appendChild(el); return { el, body };
+      };
+      sideSecs.forEach(sec => {
+        let s = openSide(sec, false), placed = 0;
+        const next = () => { pi++; sp = pageAt(pi); s = openSide(sec, placed > 0); };
+        sec.items.forEach(item => {
+          let guard = 0;
+          let el = mk('div', 'cv-item' + (item.compact ? ' cv-compact' : ''), item.head);
+          while (guard++ < 40) {
+            s.body.appendChild(el);
+            if (!sideOver(sp)) { placed++; break; }
+            // a long list (skills, languages): move the items that don't fit to the next page
+            const list = el.querySelector('ul');
+            const moved = [];
+            if (list) while (list.children.length > 1 && sideOver(sp)) moved.unshift(list.lastElementChild.outerHTML), list.lastElementChild.remove();
+            if (list && moved.length && !sideOver(sp)) {
+              placed++;
+              const rest = mk('div', el.className, '');
+              const ul = list.cloneNode(false); ul.innerHTML = moved.join(''); rest.appendChild(ul);
+              el = rest; next(); continue;
+            }
+            if (list && moved.length) { moved.forEach(h => list.insertAdjacentHTML('beforeend', h)); }
+            el.remove();
+            if (s.body.children.length === 0 && sp.side.children.length === 1) { s.body.appendChild(el); placed++; break; } // taller than a whole sidebar: keep it, never loop
+            if (s.body.children.length === 0) s.el.remove();
+            next();
+          }
+        });
+      });
+    }
+    // a page with nothing in its sidebar uses the full width
+    pages.forEach(p => { if (p.side && !p.side.children.length) p.page.classList.add('cv-noside'); });
     const total = pages.length;
     if (total > 1) pages.forEach((p, i) => { p.page.querySelector('.cv-pageno').textContent = `${cv.basics.name || ''} · Page ${i + 1} of ${total}`; });
     return total;
@@ -709,10 +766,10 @@
     ['education', /^(education|academic (background|qualifications)|qualifications|education (and|&) (training|qualifications))$/i],
     ['skills', /^((key|core|technical|professional|relevant) )?(skills|competenc(ies|es)|expertise)( (and|&) (competencies|expertise|tools))?$|^technical expertise$|^core expertise$/i],
     ['projects', /^((key|selected|personal|notable) )?projects$/i],
-    ['certificates', /^(certifications?|certificates?|licen[sc]es?( (and|&) certifications?)?|professional (registrations?|memberships?|certifications?)( (and|&) certifications?)?|accreditations?)$/i],
+    ['certificates', /^(certifications?|certificates?|licen[sc]es?( (and|&) certifications?)?|professional (registrations?|memberships?|certifications?)( (and|&) certifications?)?|accreditations?)( (and|&) (memberships?|affiliations|training|licen[sc]es|accreditations?|courses))?$/i],
     ['languages', /^languages?$/i]
   ];
-  const CUSTOM_HEADS = /^(publications?|awards?( (and|&) honou?rs)?|honou?rs|volunteer(ing)?( experience)?|interests|hobbies( (and|&) interests)?|references|training|courses|achievements|patents|presentations|conferences|memberships?|affiliations|additional information|activities)$/i;
+  const CUSTOM_HEADS = /^(publications?|awards?( (and|&) honou?rs)?|honou?rs|volunteer(ing)?( experience)?|interests|hobbies( (and|&) interests)?|references|training|courses|((key|notable|career|selected) )?achievements|patents|presentations|conferences|memberships?|affiliations|additional information|activities)$/i;
   const MON = '(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
   const DATE = `(?:${MON}\\.?,?\\s+\\d{4}|\\d{1,2}[/.]\\d{4}|\\d{4})`;
   const RANGE = new RegExp(`(${DATE})\\s*(?:-|–|—|to|until)\\s*(${DATE}|present|current|now|date|ongoing)`, 'i');
@@ -736,8 +793,14 @@
   function splitRoleLine(text) {
     // "Position at Company", "Position | Company", "Position, Company", "Position - Company"
     let m = text.match(/^(.+?)\s+at\s+(.+)$/i) || text.match(/^(.+?)\s*[|•·@]\s*(.+)$/) || text.match(/^(.+?)\s+[-–—]\s+(.+)$/) || text.match(/^(.+?),\s+(.+)$/);
+    // a comma that comes first wins: "Intern (Projects), National University – Kharkiv Institute"
+    const c = text.match(/^(.+?),\s+(.+)$/);
+    if (m && c && c[1].length < m[1].length && c[1].split('(').length === c[1].split(')').length) m = c;
     return m ? [m[1].trim(), m[2].trim()] : [text.trim(), ''];
   }
+  // "Waterford, Ireland", "Ukraine", "Dublin" — a place on its own, not an employer
+  const ORGWORD = /\b(ltd|limited|inc|plc|llc|gmbh|group|bank|university|college|school|institute|hospital|council|agency|company|services|solutions|technolog(y|ies)|systems|labs?|health|partners|consulting|studio|centre|center|department|authority|foundation|trust|corporation|corp)\b/i;
+  const isPlace = t => t.length <= 40 && /^[A-Z][A-Za-z .'’-]+(,\s*[A-Z][A-Za-z .'’-]+){0,2}$/.test(t) && !ORGWORD.test(t) && t.split(/\s+/).length <= 5;
   // join a line that the PDF wrapped back onto the line before it
   function joinWrap(prev, line) { return /[A-Za-z]-$/.test(prev) && /^[A-Za-z]/.test(line) ? prev + line : prev + ' ' + line; }
   const OPEN_END = /([,;&\/+\-–]|\b(and|or|of|the|to|for|with|in|on|at|a|an|including|across|by|from|into|through|within)$)/i;
@@ -748,6 +811,15 @@
     const flush = () => {
       if (!headLines.length && !cur) return;
       if (headLines.length) {
+        // a job title the PDF wrapped: "Business Development Lead (Part-" / "time)"
+        for (let i = headLines.length - 1; i > 0; i--) {
+          const a = headLines[i - 1].replace(RANGE, '').replace(/\s*\u2003\s*$/, '').trim(), b = headLines[i];
+          if (/^[a-z(]/.test(b) && !RANGE.test(b) && (/-$/.test(a) || (a.split('(').length > a.split(')').length))) {
+            const glue = /[A-Za-z]-$/.test(a) && !/\(\w*-$/.test(a) ? '' : (/-$/.test(a) ? '' : ' ');
+            const r = headLines[i - 1].match(RANGE);
+            headLines.splice(i - 1, 2, a + glue + b.trim() + (r ? ' \u2003 ' + r[0] : ''));
+          }
+        }
         let start = '', end = '';
         const cleaned = headLines.flatMap(l => l.split(/\s*\u2003\s*/)).map(l => {
           const r = l.match(RANGE);
@@ -755,7 +827,16 @@
           return l.trim();
         }).filter(Boolean);
         let position = '', company = '', location = '';
-        if (cleaned.length >= 2) { position = cleaned[0]; company = cleaned[1]; if (cleaned[2]) location = cleaned[2]; }
+        const [p0, c0] = cleaned.length === 2 ? splitRoleLine(cleaned[0]) : ['', ''];
+        if (c0 && isPlace(cleaned[1])) { position = p0; company = c0; location = cleaned[1]; }
+        else if (c0 && /,/.test(cleaned[0])) {
+          // "Title, Employer, part of a long" / "employer name, Town, Country | dates"
+          const parts = cleaned[1].split(/,\s*/); let k = parts.length;
+          while (k > 0 && isPlace(parts.slice(k - 1).join(', '))) k--;
+          if (k < parts.length && k > 0) { position = p0; company = c0 + ' ' + parts.slice(0, k).join(', '); location = parts.slice(k).join(', '); }
+          else { position = cleaned[0]; company = cleaned[1]; }
+        }
+        else if (cleaned.length >= 2) { position = cleaned[0]; company = cleaned[1]; if (cleaned[2]) location = cleaned[2]; }
         else if (cleaned.length === 1) [position, company] = splitRoleLine(cleaned[0]);
         const cm = company.match(/^(.+?)(?:,|\s+[-–—|·•]\s+)\s*([A-Z][A-Za-z .'-]+(?:,\s*[A-Z][A-Za-z .'-]+)?)$/);
         if (cm && !location && cm[2].length < 40) { company = cm[1]; location = cm[2]; }
@@ -765,7 +846,10 @@
       }
     };
     const VERB = /^(?:[A-Z][a-z]+(?:ed|ing)|Led|Built|Ran|Cut|Won|Grew|Drove|Set|Made|Wrote|Sold|Taught|Oversaw|Began|Brought|Took|Held|Kept|Met|Spoke|Sat|Responsible|Lead|Run|Build|Manage|Deliver|Design|Develop|Support|Work)\b/;
-    ls.forEach(line => {
+    ls.forEach((line, li) => {
+      // a long role line straight above its "Place | dates" line is a heading, not a bullet
+      const headAbove = !BULLET.test(line) && !RANGE.test(line) && ls[li + 1] && RANGE.test(ls[li + 1]) && !BULLET.test(ls[li + 1]) && ls[li + 1].length < 70 && !/[.;]$/.test(line.trim());
+      if (headAbove && cur) { flush(); cur = null; inBullets = false; headLines.push(line); return; }
       if (inBullets && cur && cur.highlights.length && !RANGE.test(line) && !BULLET.test(line)) {
         const prev = cur.highlights[cur.highlights.length - 1];
         if ((/^[a-z]/.test(line) && !/[.!?]$/.test(prev)) || OPEN_END.test(prev)) { cur.highlights[cur.highlights.length - 1] = joinWrap(prev, line.trim()); report.joined++; return; }
@@ -845,6 +929,9 @@
         kept.push(l);
       });
     });
+    // a page footer such as "Arun Antony · Page 2 of 3" can sit on the same line as other text: cut it out wherever it is
+    const FOOT_IN = /(?:^|\s{2,}|\u2003|\s·\s)(?:[A-Z][\w.'’-]*(?: [A-Z][\w.'’-]*){0,4}\s*·\s*)?page\s*\d+\s*(?:of|\/)\s*\d+(?=\s{2,}|\u2003|$)/i;
+    for (let i = 0; i < kept.length; i++) { const m = kept[i].match(FOOT_IN); if (m && kept[i].trim() !== m[0].trim()) { drop(m[0].trim()); kept[i] = kept[i].replace(m[0], '    '); } }
     const raw = kept.map(l => unspace(l).replace(/[ \t]{4,}/g, ' \u2003 ').replace(/[ \t]+/g, ' ').trim())
       .filter(l => l && !/^(universal cv id\s*)?#?UCVID-[A-Z0-9]{5}$/i.test(l) && !(/· Page \d+ of \d+$/.test(l) || PAGE_RE.test(l.replace(/\s*\u2003\s*/g, ' ')) ? !drop(l.replace(/\s*\u2003\s*/g, ' ')) : false))
       .reduce((acc, l) => { if (acc.length && /^[•\-*·▪◦●○■➢►✓]$/.test(acc[acc.length - 1])) acc[acc.length - 1] += ' ' + l; else acc.push(l); return acc; }, []); // a bullet dot alone on its line belongs to the next line
@@ -876,6 +963,7 @@
     const topRest = after.filter(l => l !== labelLine && !isContact(l));
     if (topRest.join(' ').length > 120) cv.basics.summary = topRest.join(' ');
 
+    const groupOf = {};
     blocks.slice(1).forEach(bk => {
       const ls = bk.lines;
       if (bk.key === 'summary') cv.basics.summary = ls.map(l => l.replace(BULLET, '')).join(' ');
@@ -884,14 +972,34 @@
       else if (bk.key === 'skills') {
         // first undo line wraps ("Cross-" / "Functional & Global Collaboration"), then split on real separators only
         const SKILL_OPEN = /[-&\/+]$|\b(and|or|of|for|with|in|to)$/i;
+        const LABELISH = /^(?:[A-Za-z&/' -]{0,24}\s)?(skills|tools|software|technologies|languages|competenc(?:ies|es)|frameworks|platforms|methods|methodologies|programming)$|^(technical|interpersonal|soft|hard|core|personal|it)$/i;
         const merged = [];
         ls.map(l => l.replace(BULLET, '').trim()).filter(Boolean).forEach(l => {
           const p = merged[merged.length - 1];
-          if (p && !/:\s*$/.test(p) && !/^[A-Za-z &/]{3,40}:/.test(l) && (SKILL_OPEN.test(p) || (/^[a-z]/.test(l) && !/[,;.|•·]$/.test(p)))) { merged[merged.length - 1] = joinWrap(p, l); report.skills++; }
+          const openParen = p && p.split('(').length > p.split(')').length;
+          if (p && (!/:\s*$/.test(p) || !LABELISH.test(p.replace(/:\s*$/, ""))) && !/^[A-Za-z &/]{3,40}:/.test(l) && (/:\s*$/.test(p) || SKILL_OPEN.test(p) || openParen || (/^[a-z]/.test(l) && !/[,;.|•·]$/.test(p)))) { merged[merged.length - 1] = joinWrap(p, l); report.skills++; }
           else merged.push(l);
         });
+        // a heading such as "Technical Skills" (rather than plain "Skills") names the group under it
+        const ht = bk.title.replace(/[:\s]+$/, '');
+        let lastLabel = /^(key |core |relevant )?skills?$/i.test(ht) || ht === ht.toUpperCase() && /^(KEY |CORE )?SKILLS?$/.test(ht) ? '' : (ht === ht.toUpperCase() ? ht.charAt(0) + ht.slice(1).toLowerCase() : ht);
         merged.forEach(l => {
-          const parts = l.replace(/^[A-Za-z &/]{3,40}:\s*/, '').split(/(\s*[,;|•·]\s*|\s*\u2003\s*)/);
+          // a short capitalised line with no list on it ("TOOLS", "Soft Skills") labels the lines under it
+          if (/^[A-Z][A-Za-z &/'-]{2,30}$/.test(l) && LABELISH.test(l) && l.split(' ').length <= 4) { lastLabel = l === l.toUpperCase() ? l.charAt(0) + l.slice(1).toLowerCase() : l; return; }
+          let lab = l.match(/^([A-Za-z][A-Za-z &/'-]{2,40}):\s*(.*)$/);
+          // "Design & Verification: Multiphase modelling" is one skill, not a group: a label needs a list, or a label-like name
+          if (lab && lab[2].trim() && !/[,;|•·\u2003]/.test(lab[2]) && !LABELISH.test(lab[1])) lab = null;
+          // "Technical:" on its own line labels the lines under it; "Technical: a, b" labels just that line
+          if (lab && !lab[2].trim()) { if (LABELISH.test(lab[1])) { lastLabel = lab[1].trim(); return; } lab = null; }
+          const label = lab ? lab[1].trim() : lastLabel;
+          const body = lab ? lab[2] : l;
+          // split on separators, but never inside brackets: "CFD (ANSYS Fluent, STAR-CCM+)"
+          const parts = []; let depth = 0, buf = '';
+          for (const ch of body) {
+            if (ch === '(') depth++; if (ch === ')') depth = Math.max(0, depth - 1);
+            if (!depth && /[,;|•·\u2003]/.test(ch)) { parts.push(buf, ch === '\u2003' ? '\u2003' : ','); buf = ''; } else buf += ch;
+          }
+          parts.push(buf);
           const items = [];
           for (let i = 0; i < parts.length; i += 2) {
             const s = (parts[i] || '').trim(), sep = i ? parts[i - 1] : '';
@@ -900,7 +1008,7 @@
             if (prev && /\u2003/.test(sep) && (SKILL_OPEN.test(prev) || /^[a-z]/.test(s))) { items[items.length - 1] = joinWrap(prev, s); report.skills++; continue; }
             items.push(s);
           }
-          items.forEach(s => { s = s.replace(/\.$/, '').replace(/^[-–—]\s*/, '').trim(); if (s && s.length < 80 && !cv.skills.some(x => x.toLowerCase() === s.toLowerCase())) cv.skills.push(s); });
+          items.forEach(s => { s = s.replace(/\.$/, '').replace(/^[-–—]\s*/, '').trim(); if (s && s.length < 80 && !cv.skills.some(x => x.toLowerCase() === s.toLowerCase())) { cv.skills.push(s); groupOf[s] = label; } });
         });
       } else if (bk.key === 'projects') {
         let cur = null;
@@ -913,6 +1021,8 @@
         cv.custom.push({ title: bk.title, items: [{ title: '', sub: '', date: '', text: ls.map(l => l.replace(BULLET, '')).join('\n') }] });
       }
     });
+    const labels = [...new Set(cv.skills.map(k => groupOf[k]).filter(Boolean))];
+    if (labels.length) cv.skillGroups = ['', ...labels].map(g => ({ name: g, items: cv.skills.filter(k => (groupOf[k] || '') === g) })).filter(g => g.items.length);
     const scrub = o => { Object.keys(o).forEach(k => { if (typeof o[k] === 'string') o[k] = o[k].replace(/\s*\u2003\s*/g, ' ').trim(); else if (o[k] && typeof o[k] === 'object') scrub(o[k]); }); return o; };
     scrub(cv);
     cv.report = report;
@@ -962,7 +1072,7 @@
       basics: { name: b.name, label: b.label, email: b.email, phone: b.phone, summary: plain(b.summary), location: { city: b.location }, profiles: b.url ? [{ network: 'Link', url: b.url }] : [] },
       work: cv.work.map(w => ({ name: w.company, position: w.position, location: w.location, startDate: w.startDate, endDate: w.endDate, highlights: w.highlights.map(plain) })),
       education: cv.education.map(e => ({ institution: e.institution, studyType: e.degree, endDate: e.year, courses: e.details ? [e.details] : [] })),
-      skills: cv.skills.map(s => ({ name: s })),
+      skills: (cv.skillGroups || []).some(g => g.name) ? cv.skillGroups.map(g => ({ name: g.name || 'Skills', keywords: g.items })) : cv.skills.map(s => ({ name: s })),
       projects: cv.projects.map(p => ({ name: p.name, description: p.description, url: p.url })),
       certificates: cv.certificates.map(c => ({ name: c.name, issuer: c.issuer, date: c.date })),
       languages: cv.languages.map(l => ({ language: l.language, fluency: l.fluency })),
@@ -979,6 +1089,7 @@
       work: (j.work || []).map(w => ({ position: w.position || '', company: w.name || w.company || '', location: w.location || '', startDate: (w.startDate || '').slice(0, 7), endDate: (w.endDate || '').slice(0, 7), highlights: [w.summary, ...(w.highlights || [])].filter(Boolean) })),
       education: (j.education || []).map(e => ({ degree: [e.studyType, e.area].filter(Boolean).join(' '), institution: e.institution || '', year: (e.endDate || '').slice(0, 4), details: (e.courses || []).join(', ') })),
       skills: (j.skills || []).flatMap(s => s.keywords && s.keywords.length ? s.keywords : [s.name]).filter(Boolean),
+      skillGroups: (j.skills || []).filter(s => s && s.keywords && s.keywords.length && s.name).map(s => ({ name: String(s.name), items: s.keywords.map(String) })),
       projects: (j.projects || []).map(p => ({ name: p.name || '', description: p.description || '', url: p.url || '' })),
       certificates: (j.certificates || []).map(c => ({ name: c.name || '', issuer: c.issuer || '', date: c.date || '' })),
       languages: (j.languages || []).map(l => ({ language: l.language || '', fluency: l.fluency || '' })),
@@ -986,6 +1097,13 @@
     };
   }
   const fileStem = (store, res) => `${(res.cv.basics.name || 'CV').replace(/[^A-Za-z0-9]+/g, '_')}_${(res.name || 'CV').replace(/[^A-Za-z0-9]+/g, '_')}`;
+
+  // grouped skills as plain lines: "Technical skills: CFD, FEA, CAD"
+  function skillLines(cv) {
+    const gs = (cv.skillGroups || []).filter(g => g.items && g.items.length);
+    if (!gs.some(g => g.name)) return [cv.skills.join(', ')];
+    return gs.map(g => (g.name ? g.name + ': ' : '') + g.items.join(', '));
+  }
 
   // ---------- plain text PDF (always readable by screening software) ----------
   function pdf(store, res) {
@@ -1030,7 +1148,7 @@
         items.forEach(w => { row(w.position || 'Role', dateRange(w.startDate, w.endDate, f)); text([w.company, w.location].filter(Boolean).join(', '), 9.5, 'italic', '#444444'); w.highlights.forEach(bullet); y += 2; }); }
       if (key === 'education') { const items = cv.education.filter(e => e.degree || e.institution); if (!items.length) return; heading('Education');
         items.forEach(e => { row(e.degree || 'Qualification', e.year); if (e.institution) text(e.institution, 9.5, 'italic', '#444444'); if (e.details) text(e.details, 9.5, 'normal'); y += 1.5; }); }
-      if (key === 'skills' && cv.skills.length) { heading('Skills'); text(cv.skills.join(', '), 10, 'normal'); }
+      if (key === 'skills' && cv.skills.length) { heading('Skills'); skillLines(cv).forEach(l => text(l, 10, 'normal')); }
       if (key === 'projects') { const items = cv.projects.filter(p => p.name); if (!items.length) return; heading('Projects');
         items.forEach(p => { row(p.name, p.url); if (p.description) text(p.description, 10, 'normal'); y += 1.5; }); }
       if (key === 'certificates') { const items = cv.certificates.filter(c => c.name); if (!items.length) return; heading('Certifications');
@@ -1079,7 +1197,7 @@
           items.forEach(w => { row(w.position || 'Role', dateRange(w.startDate, w.endDate, f)); sub([w.company, w.location].filter(Boolean).join(', ')); w.highlights.forEach(bul); }); }
         if (key === 'education') { const items = cv.education.filter(e => e.degree || e.institution); if (!items.length) return; heading('Education');
           items.forEach(e => { row(e.degree || 'Qualification', e.year); sub(e.institution); if (e.details) kids.push(para(run(e.details))); }); }
-        if (key === 'skills' && cv.skills.length) { heading('Skills'); kids.push(para(run(cv.skills.join(', ')))); }
+        if (key === 'skills' && cv.skills.length) { heading('Skills'); skillLines(cv).forEach(l => { const i = l.indexOf(': '); kids.push(para(i > 0 && (cv.skillGroups || []).some(g => g.name && l.startsWith(g.name + ': ')) ? [run(l.slice(0, i + 1), { bold: true }), run(l.slice(i + 1))] : run(l))); }); }
         if (key === 'projects') { const items = cv.projects.filter(p => p.name); if (!items.length) return; heading('Projects');
           items.forEach(p => { row(p.name, p.url); if (p.description) kids.push(para(run(p.description))); }); }
         if (key === 'certificates') { const items = cv.certificates.filter(c => c.name); if (!items.length) return; heading('Certifications');
