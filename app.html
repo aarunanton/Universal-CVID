@@ -8,12 +8,12 @@
 <meta name="description" content="Free online CV builder. Build, tailor and download your CV as PDF or Word, and track your job applications. No sign-up.">
 <link rel="canonical" href="https://cvid.app/app.html">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<script src="assets/boot.js?v=30"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=30">
-<link rel="stylesheet" href="assets/styles.css?v=30">
-<script src="assets/vendor/lz-string.min.js?v=30"></script>
-<script src="assets/vendor/qrcode.min.js?v=30"></script>
-<script src="assets/vendor/jspdf.umd.min.js?v=30"></script>
+<script src="assets/boot.js?v=31"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=31">
+<link rel="stylesheet" href="assets/styles.css?v=31">
+<script src="assets/vendor/lz-string.min.js?v=31"></script>
+<script src="assets/vendor/qrcode.min.js?v=31"></script>
+<script src="assets/vendor/jspdf.umd.min.js?v=31"></script>
 </head>
 <body>
   <header class="app-bar">
@@ -25,7 +25,20 @@
         <button class="ver-chip" data-tab="home" title="Back to the dashboard"><span class="sw">← Dashboard</span><span class="eyebrow">Editing</span><b id="verName">Main CV</b></button>
         <select id="versionSelect" class="sr" tabindex="-1" aria-hidden="true"></select>
       </div>
-      <div class="pv-size" role="group" aria-label="Preview size"><span>Preview</span><button type="button" data-action="pv-size" data-size="small" aria-pressed="true">Small</button><button type="button" data-action="pv-size" data-size="large" aria-pressed="false">Large</button><button type="button" data-action="pv-size" data-size="hidden" aria-pressed="false">Hidden</button></div>
+      <div class="modes" id="modes" role="tablist" aria-label="Mode"></div>
+      <div class="bar-actions">
+        <button class="btn btn-sm bar-share" data-tab="share" aria-label="Share"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg><span>Share</span></button>
+        <span class="dl-split">
+          <button class="btn btn-sm btn-primary dl-main" data-action="download-main" aria-label="Download PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v13"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg><span>Download PDF</span></button><button class="btn btn-sm btn-primary dl-more" data-action="dl-menu" aria-label="More download options" aria-expanded="false" aria-controls="dlMenu">▾</button>
+          <span class="dl-menu" id="dlMenu" role="menu" hidden>
+            <button role="menuitem" data-action="docx">Word (.docx)</button>
+            <button role="menuitem" data-action="pdf">Plain-text PDF</button>
+            <button role="menuitem" data-action="export-json">JSON Resume</button>
+            <button role="menuitem" data-tab="letter">Cover letter…</button>
+            <button role="menuitem" data-tab="share">All download and share options…</button>
+          </span>
+        </span>
+      </div>
       <a class="fb-link" href="https://tally.so/r/1A11el" target="_blank" rel="noopener" title="Give feedback: 2-minute anonymous survey" aria-label="Give feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Feedback</span></a>
     </div>
     <nav class="tabs" id="tabs" role="tablist" aria-label="Main"></nav>
@@ -40,7 +53,6 @@
         <span class="eyebrow" id="pageCount">Live preview · A4</span>
         <span class="fit-chip" id="fitChip" hidden></span>
         <button class="btn btn-sm panel-toggle" data-action="toggle-panel">Hide panel</button>
-        <button class="btn btn-sm btn-primary" data-action="download-main">Download PDF</button>
       </div>
       <div class="paper-wrap" id="paperWrap"><div class="paper-scale" id="paper"></div></div>
     </aside>
@@ -50,8 +62,8 @@
 
   <div class="toast-wrap" id="toasts" aria-live="polite"></div>
 
-  <script src="assets/cv.js?v=30"></script>
-  <script src="assets/app.js?v=30"></script>
+  <script src="assets/cv.js?v=31"></script>
+  <script src="assets/app.js?v=31"></script>
 <!-- Cloudflare Web Analytics: anonymous visit counts, no cookies. Not loaded on share pages (p.html). --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "1879d12eedaf4b739530700ef3285989"}'></script>
 </body>
 </html>

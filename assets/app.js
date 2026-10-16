@@ -21,6 +21,9 @@
   let importNote = false;
   const openGroups = new Set(['version', 'basics', 'work', 'skills']);
   let storageWarned = false;
+  let designSub = 'template'; // Design mode: template | type | colour | sections
+  let openSec = 'work'; // Write mode: one section open at a time
+  const openItems = {}; // Write mode: which entry is open in each list (the first by default; '-' = none)
 
   const onOwnSite = !/claude/.test(location.hostname); // downloads and printing are blocked inside the Claude preview window
   // Two places: the dashboard (everything across your CVs) and a CV workspace (one CV, step by step).
@@ -28,6 +31,7 @@
   const CV_TABS = [['edit', 'Content'], ['design', 'Design'], ['match', 'Job match', 'Match'], ['score', 'CV check', 'Check'], ['letter', 'Cover letter', 'Letter'], ['share', 'Export']];
   const ALL_TABS = DASH_TABS.concat(CV_TABS).map(t => t[0]).concat('versions', 'import');
   const isDash = t => !CV_TABS.some(x => x[0] === t);
+  const MODES = [['edit', 'Write'], ['design', 'Design'], ['score', 'Check']];
   const TAB_ICON = {
     home: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
     tracker: '<rect x="4" y="4" width="4" height="16" rx="1"/><rect x="10" y="4" width="4" height="10" rx="1"/><rect x="16" y="4" width="4" height="13" rx="1"/>',
@@ -37,7 +41,8 @@
     match: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
     score: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-6"/>',
     letter: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 8l9 6 9-6"/>',
-    share: '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>'
+    share: '<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/>',
+    page: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/>'
   };
   const isPhone = () => matchMedia('(max-width: 760px)').matches;
   function syncPreviewBtn() {
@@ -45,7 +50,9 @@
     const on = document.body.classList.contains('show-preview');
     b.setAttribute('aria-pressed', on);
     b.lastElementChild.textContent = on ? 'Back to editing' : 'Preview';
+    $$('#tabs [id^="tab-"]').forEach(t => { if (t.id === 'tab-page') t.setAttribute('aria-selected', on); else if (on) t.setAttribute('aria-selected', 'false'); });
   }
+  function closeDlMenu() { const m = $('#dlMenu'); if (m && !m.hidden) { m.hidden = true; $('[data-action="dl-menu"]').setAttribute('aria-expanded', 'false'); } }
 
   // ---------- state helpers ----------
   const active = () => store.versions.find(v => v.vid === store.active) || store.versions[0];
@@ -102,6 +109,18 @@
     const sc = UCV.score(res(), pages);
     const dash = isDash(tab);
     document.body.classList.toggle('mode-dash', dash);
+    const modeOf = t => t === 'match' ? 'score' : t;
+    $('#modes').innerHTML = dash ? '' : MODES.map(([id, label]) => `<button class="mode" role="tab" data-tab="${id}" aria-selected="${modeOf(tab) === id}">${label}${id === 'score' ? `<span class="badge" id="scoreBadge">${sc.score}</span>` : ''}</button>`).join('');
+    if (!dash) {
+      // phone: four big tabs at the bottom; desktop hides this row and uses the mode switch above
+      $('#tabs').innerHTML = [['edit', 'Write'], ['page', 'Page'], ['design', 'Design'], ['score', 'Check']].map(([id, label]) => {
+        const on = id === 'page' ? document.body.classList.contains('show-preview') : (!document.body.classList.contains('show-preview') && modeOf(tab) === id);
+        const attr = id === 'page' ? 'data-action="toggle-preview"' : `data-tab="${id}"`;
+        return `<button class="tab" role="tab" ${attr} aria-selected="${on}" id="tab-${id}"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${TAB_ICON[id]}</svg></span><span class="tab-tx">${label}</span><span class="tab-sh" aria-hidden="true">${label}</span>${id === 'score' ? `<span class="badge">${sc.score}</span>` : ''}</button>`;
+      }).join('');
+      document.body.classList.toggle('is-start', !!store.isNew);
+      return;
+    }
     $('#tabs').innerHTML = (dash ? DASH_TABS : CV_TABS).map(([id, label, short], i) => {
       let badge = '';
       if (id === 'score') badge = `<span class="badge" id="scoreBadge">${sc.score}</span>`;
@@ -203,6 +222,7 @@
     e.preventDefault(); document.execCommand('insertText', false, (e.clipboardData || window.clipboardData).getData('text').replace(/\s*\n\s*/g, ' '));
   });
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && $('#dlMenu') && !$('#dlMenu').hidden) { closeDlMenu(); $('[data-action="dl-menu"]').focus(); return; }
     const el = pageEl(e); if (!el) return;
     const { path } = edRef(el), bm = path.match(BULLET);
     if (e.key === 'Escape') { el.blur(); return; }
@@ -245,7 +265,7 @@
     paper.style.marginBottom = (paper.offsetHeight * (scale - 1)) + 'px';
     paper.style.marginRight = (794 * (scale - 1)) + 'px';
   }
-  const refreshScoreBadge = () => { const b = $('#scoreBadge'); if (b) b.textContent = UCV.score(res(), pages).score; if (tab === 'score') $('#panel').innerHTML = renderScore() + nextBar(); };
+  const refreshScoreBadge = () => { const b = $('#scoreBadge'); if (b) b.textContent = UCV.score(res(), pages).score; if (tab === 'score') { const op = $('.c-passed'); const keep = op && op.open; $('#panel').innerHTML = renderScore() + nextBar(); if (keep) $('.c-passed').open = true; } };
   const refreshMatch = () => { const r = $('#matchResults'); if (r) r.innerHTML = matchResultsHTML(); };
 
   // ---------- form helpers ----------
@@ -296,12 +316,27 @@
         ${field('Subtitle', 'm', p + 'sub', it.sub)}${field('Details', 'm', p + 'text', it.text, 'textarea', ' <span class="hint">one point per line</span>')}`;
     }
   }
+  const yr = d => String(d || '').slice(0, 4);
+  function itemSub(section, it) {
+    const sub = { work: it.company, education: it.institution, certificates: it.issuer, languages: it.fluency, projects: '' }[section];
+    const dates = section === 'work' ? (it.startDate || it.endDate ? `${yr(it.startDate)}–${it.endDate ? yr(it.endDate) : 'now'}` : '') : yr(it.year || it.date);
+    return { sub: section in { work: 1, education: 1, certificates: 1, languages: 1, projects: 1 } ? sub : it.sub, dates };
+  }
   function itemsHTML(section, path, items) {
-    return items.length ? items.map((it, i) => `
-      <div class="item${hidden(it.id) ? ' off' : ''}">
+    const openId = openItems[path] || (items[0] && items[0].id);
+    return items.length ? items.map((it, i) => it.id !== openId ? (() => { const { sub, dates } = itemSub(section, it); return `
+      <div class="item item-min${hidden(it.id) ? ' off' : ''}">
         <div class="item-head">
           ${check(it.id, 'Show this entry')}
-          <span class="title" data-title="${path}.${i}">${esc(itemTitle(section, it))}</span>
+          <button class="item-open" data-action="open-item" data-path="${path}" data-id="${it.id}" aria-expanded="false"><b>${esc(itemTitle(section, it))}</b>${sub ? `<span>${esc(sub)}</span>` : ''}</button>
+          ${dates ? `<span class="item-date">${esc(dates)}</span>` : ''}
+          <button class="icon-btn" data-action="move-item" data-path="${path}" data-i="${i}" data-dir="-1" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button>
+          <button class="icon-btn" data-action="move-item" data-path="${path}" data-i="${i}" data-dir="1" aria-label="Move down" ${i === items.length - 1 ? 'disabled' : ''}>↓</button>
+        </div></div>`; })() : `
+      <div class="item is-open${hidden(it.id) ? ' off' : ''}">
+        <div class="item-head">
+          ${check(it.id, 'Show this entry')}
+          <button class="item-open title" data-action="open-item" data-path="${path}" data-id="${it.id}" aria-expanded="true" data-title="${path}.${i}">${esc(itemTitle(section, it))}</button>
           <button class="icon-btn" data-action="move-item" data-path="${path}" data-i="${i}" data-dir="-1" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button>
           <button class="icon-btn" data-action="move-item" data-path="${path}" data-i="${i}" data-dir="1" aria-label="Move down" ${i === items.length - 1 ? 'disabled' : ''}>↓</button>
           <button class="icon-btn" data-action="remove-item" data-path="${path}" data-i="${i}" aria-label="Remove">✕</button>
@@ -488,45 +523,59 @@
       <p class="hint"><a href="privacy.html">How your data is handled</a></p>`;
   }
   function nextBar() {
-    const n = { edit: ['design', 'Choose a design'], design: ['match', 'Tailor this CV to a job'], match: ['score', 'Run the CV checks'], score: ['share', 'Download and apply'], letter: ['share', 'Download and apply'], share: ['tracker', 'Track this application'], versions: ['edit', 'Back to the CV'] }[tab];
+    const n = { letter: ['share', 'Download and apply'], share: ['tracker', 'Track this application'], versions: ['edit', 'Back to the CV'] }[tab];
     if (!n) return '';
     return `<div class="nextbar"><span class="eyebrow">Next</span><button class="btn btn-primary" data-tab="${n[0]}">${n[1]} →</button>${tab === 'score' ? '<button class="btn btn-ghost btn-sm" data-tab="letter">Add a cover letter first</button>' : ''}</div>`;
   }
   function renderEdit() {
     const m = store.master, v = active(), b = m.basics, sel = selection(v);
     const banners = `${importNote ? `<div class="banner info"><span>Imported. Importing is a best guess, so check each section, especially job titles and dates.</span><button class="btn btn-sm" data-action="dismiss-import">Got it</button></div>` : ''}`;
-    return `${banners}
-      <section class="ver-banner">
-        <div><span class="eyebrow">Current version</span><h2>${esc(v.name)}</h2>
-          <p>${sel.bulletsShown} of ${sel.bullets} achievements and ${sel.skillsShown} of ${sel.skills} skills selected</p></div>
-        <button class="btn btn-sm" data-tab="home">Back to dashboard</button>
-      </section>
-      ${groupShell('version', 'Title and profile for this version', null, `
-        <p class="hint">These two are saved for this version only, so you can reword them for each job.</p>
-        ${field('Professional title', 'v', 'label', v.label)}
-        ${field('Profile', 'v', 'summary', v.summary, 'textarea', ' <span class="hint">2–4 sentences</span>')}`)}
-      <div class="master-head"><span class="eyebrow">Master CV</span><h2>Everything about your career lives here</h2>
-        <p>Tick what the current version shows. Anything unticked stays stored for your other versions.</p></div>
-      ${groupShell('basics', 'Personal details', null, `
-        <div class="grid-2">${field('Full name', 'm', 'basics.name', b.name)}${field('Email', 'm', 'basics.email', b.email, 'email')}</div>
-        <div class="grid-2">${field('Phone', 'm', 'basics.phone', b.phone, 'tel')}${field('Location', 'm', 'basics.location', b.location)}</div>
-        ${field('LinkedIn or website', 'm', 'basics.url', b.url)}
+    const initials = (b.name || '').split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+    const headOpen = openSec === 'basics';
+    const head = `<section class="w-sec w-headsec${headOpen ? ' open' : ''}" data-sec-row="basics">
+      <button class="w-head" data-action="open-sec" data-k="basics" aria-expanded="${headOpen}">
+        ${b.photo ? `<img src="${esc(b.photo)}" alt="" class="w-av">` : `<span class="w-av" aria-hidden="true">${esc(initials)}</span>`}
+        <span class="w-who"><b>${esc(b.name || 'Your name')}</b><span>${esc([v.label, b.location].filter(Boolean).join(' · ') || 'Title, contact details and photo')}</span></span>
+        <span class="w-edit">${headOpen ? 'Done' : 'Edit'}</span></button>
+      ${headOpen ? `<div class="w-body group-body">
+        <div class="grid-2">${field('Full name', 'm', 'basics.name', b.name)}${field('Professional title', 'v', 'label', v.label, 'text', ' <span class="hint">this version</span>')}</div>
+        <div class="grid-2">${field('Email', 'm', 'basics.email', b.email, 'email')}${field('Phone', 'm', 'basics.phone', b.phone, 'tel')}</div>
+        <div class="grid-2">${field('Location', 'm', 'basics.location', b.location)}${field('LinkedIn or website', 'm', 'basics.url', b.url)}</div>
         <div class="photo-row">
           ${b.photo ? `<img src="${esc(b.photo)}" alt="Your photo" class="photo-thumb">` : '<div class="photo-thumb empty" aria-hidden="true"></div>'}
           <label class="btn btn-sm" for="photoFile">${b.photo ? 'Change photo' : 'Add photo'}<input id="photoFile" type="file" accept="image/*" class="sr"></label>
           ${b.photo ? '<button class="btn btn-sm btn-ghost" data-action="remove-photo">Remove</button>' : ''}
           <span class="hint">Optional. Common in Europe; leave it out for US and UK applications.</span>
-        </div>`)}
-      ${listGroup('work', 'Experience', 'Add role')}
-      ${listGroup('education', 'Education', 'Add qualification')}
-      ${groupShell('skills', 'Skills', shownCount(m.skills), skillsEditor(m))}
-      ${listGroup('projects', 'Projects', 'Add project')}
-      ${listGroup('certificates', 'Certifications', 'Add certification')}
-      ${listGroup('languages', 'Languages', 'Add language')}
-      ${m.custom.map((c, ci) => groupShell('c:' + c.id, esc(c.title || 'Custom section'), shownCount(c.items), `
-        <div class="row">${field('Section name', 'm', `custom.${ci}.title`, c.title)}<button class="btn btn-sm btn-danger" data-action="remove-section" data-i="${ci}" style="align-self:end">Delete section</button></div>
-        ${itemsHTML('custom', `custom.${ci}.items`, c.items)}
-        <div><button class="btn btn-sm" data-action="add-item" data-section="customItem" data-path="custom.${ci}.items">+ Add entry</button></div>`)).join('')}
+        </div></div>` : ''}</section>`;
+    const LIST = { work: 'Add a job', education: 'Add a qualification', projects: 'Add a project', certificates: 'Add a certification', languages: 'Add a language' };
+    const meta = k => {
+      if (k === 'summary') { const n = (v.summary || '').split(/(?<=[.!?])\s+/).filter(Boolean).length; return n ? `${n} sentence${n > 1 ? 's' : ''}` : 'empty'; }
+      if (k === 'skills') { const g = (m.skillGroups || []).length; return g ? `${g} group${g > 1 ? 's' : ''} · ${shownCount(m.skills)}` : shownCount(m.skills); }
+      if (k === 'work') return `${sel.bulletsShown} of ${sel.bullets} lines · ${shownCount(m.work)} job${m.work.length === 1 ? '' : 's'}`;
+      if (LIST[k]) return shownCount(m[k]);
+      const c = m.custom.find(x => 'c:' + x.id === k); return c ? shownCount(c.items) : '';
+    };
+    const body = k => {
+      if (k === 'summary') return `${field('Profile', 'v', 'summary', v.summary, 'textarea', ' <span class="hint">2–4 sentences · this version only</span>')}`;
+      if (k === 'skills') return skillsEditor(m);
+      if (LIST[k]) return `${itemsHTML(k, k, m[k])}<div><button class="btn btn-sm" data-action="add-item" data-section="${k}" data-path="${k}">+ ${LIST[k]}</button></div>`;
+      const ci = m.custom.findIndex(x => 'c:' + x.id === k); if (ci < 0) return '';
+      return `<div class="row">${field('Section name', 'm', `custom.${ci}.title`, m.custom[ci].title)}<button class="btn btn-sm btn-danger" data-action="remove-section" data-i="${ci}" style="align-self:end">Delete section</button></div>
+        ${itemsHTML('custom', `custom.${ci}.items`, m.custom[ci].items)}
+        <div><button class="btn btn-sm" data-action="add-item" data-section="customItem" data-path="custom.${ci}.items">+ Add entry</button></div>`;
+    };
+    const off = v.hiddenSections || [];
+    const rows = v.order.map(k => {
+      const open = openSec === k, title = k === 'summary' ? 'Profile' : UCV.sectionTitle(store, k);
+      return `<section class="w-sec${open ? ' open' : ''}${off.includes(k) ? ' off' : ''}" data-sec-row="${esc(k)}">
+        <button class="w-row" data-action="open-sec" data-k="${esc(k)}" aria-expanded="${open}"><span class="w-name">${esc(title)}</span>${off.includes(k) ? '<span class="w-tag">Hidden on this CV</span>' : ''}<span class="w-meta">${esc(meta(k))}</span><span class="w-chev" aria-hidden="true">›</span></button>
+        ${open ? `<div class="w-body group-body">${body(k)}</div>` : ''}</section>`;
+    }).join('');
+    return `${banners}
+      ${head}
+      <div class="w-label"><span>Sections · print order</span><button class="linkish" data-tab="design" data-sub="sections">Reorder or hide</button></div>
+      <div class="w-list">${rows}</div>
+      <p class="w-note">Editing <b>${esc(v.name)}</b>. Untick a line, entry or skill to leave it off this version; it stays saved for your other versions.</p>
       <section class="panel add-section">
         <b>Add a section</b>
         <div class="row">${['Publications', 'Awards', 'Volunteering', 'Training', 'Interests'].map(t => `<button class="btn btn-sm" data-action="add-section" data-title="${t}">+ ${t}</button>`).join('')}<button class="btn btn-sm" data-action="add-section" data-title="">+ Custom</button></div>
@@ -551,64 +600,65 @@
   }
   function renderDesign() {
     const v = active(), d = v.design;
-    return `
-      <section class="panel">
-        <h2>Template</h2><p class="sub">Each version can use its own design.</p>
-        <div class="tpl-grid">${UCV.TEMPLATES.map(t => `<button class="tpl" data-action="set-template" data-id="${t.id}" aria-pressed="${d.template === t.id}">${tplThumb(t.id)}<b>${t.name}</b><small>${t.note}</small></button>`).join('')}</div>
-      </section>
-      <section class="panel">
-        <h2>Type and spacing</h2><p class="sub">Tighten these to pull a CV back onto one page.</p>
+    const SUBS = [['template', 'Template'], ['type', 'Type and spacing'], ['colour', 'Colour'], ['sections', 'Sections']];
+    const nav = `<div class="d-subs" role="tablist" aria-label="Design">${SUBS.map(([k, l]) => `<button role="tab" data-action="design-sub" data-k="${k}" aria-selected="${designSub === k}">${l}</button>`).join('')}</div>`;
+    let body = '';
+    if (designSub === 'template') body = `<p class="sub">Each version can use its own design. Every template prints on A4 and reads cleanly in screening software.</p>
+        <div class="tpl-grid">${UCV.TEMPLATES.map(t => `<button class="tpl" data-action="set-template" data-id="${t.id}" aria-pressed="${d.template === t.id}">${tplThumb(t.id)}<b>${t.name}</b><small>${t.note}</small></button>`).join('')}</div>`;
+    else if (designSub === 'type') body = `<p class="sub">Tighten these to pull a CV back onto one page, or use Fit above the page.</p>
         <div class="stack">
           <div class="grid-2">
             <label class="field" for="d-font">Font<select id="d-font" data-d="font">${UCV.FONTS.map(f => `<option value="${f.id}" ${d.font === f.id ? 'selected' : ''}>${f.name}</option>`).join('')}</select></label>
             <label class="field" for="d-dateFmt">Date format<select id="d-dateFmt" data-d="dateFmt">${UCV.DATE_FORMATS.map(f => `<option value="${f.id}" ${d.dateFmt === f.id ? 'selected' : ''}>${f.name}</option>`).join('')}</select></label>
           </div>
-          <div class="grid-2">${slider('Font size', 'size', 8.5, 12, 0.5, ' pt')}${slider('Line spacing', 'line', 1.15, 1.8, 0.05, '')}</div>
-          <div class="grid-2">${slider('Page margins', 'margin', 8, 25, 1, ' mm')}${slider('Space between sections', 'gap', 6, 28, 1, ' px')}</div>
-          <div><span class="field">Accent colour${d.template === 'plain' ? ' <span class="hint">Plain ATS always prints in black</span>' : ''}</span>
-            <div class="swatches" style="margin-top:.4rem">${UCV.ACCENTS.map(c => `<button class="swatch" style="background:${c}" data-action="set-accent" data-color="${c}" aria-label="Accent ${c}" aria-pressed="${d.accent === c}"></button>`).join('')}</div></div>
+          ${slider('Font size', 'size', 8.5, 12, 0.5, ' pt')}${slider('Line spacing', 'line', 1.15, 1.8, 0.05, '')}
+          ${slider('Page margins', 'margin', 8, 25, 1, ' mm')}${slider('Space between sections', 'gap', 6, 28, 1, ' px')}
           ${(store.master.skillGroups || []).length ? `<div><span class="field">Skill groups on the CV</span>
             <div class="seg-row" role="group" aria-label="How skill groups print" style="margin-top:.4rem">
               <button class="btn btn-sm" data-action="set-skillstyle" data-v="list" aria-pressed="${d.skillStyle !== 'tags'}">Label and list</button>
               <button class="btn btn-sm" data-action="set-skillstyle" data-v="tags" aria-pressed="${d.skillStyle === 'tags'}">Tags</button></div></div>` : ''}
-          <div class="row">
-            <label class="switch"><input type="checkbox" data-dbool="photo" ${d.photo ? 'checked' : ''} ${store.master.basics.photo ? '' : 'disabled'}> Show photo${store.master.basics.photo ? '' : ' <span class="hint">(add one under Content)</span>'}</label>
-          </div>
-        </div>
-      </section>
-      <section class="panel">
-        <h2>Sections</h2><p class="sub">Drag to reorder. Untick a section to leave it out of this version.</p>
+          <label class="switch"><input type="checkbox" data-dbool="photo" ${d.photo ? 'checked' : ''} ${store.master.basics.photo ? '' : 'disabled'}> Show photo${store.master.basics.photo ? '' : ' <span class="hint">(add one under Write, at the top)</span>'}</label>
+        </div>`;
+    else if (designSub === 'colour') body = `<p class="sub">One accent colour for headings and lines.${d.template === 'plain' ? ' Plain ATS always prints in black.' : ''}</p>
+        <div class="swatches">${UCV.ACCENTS.map(c => `<button class="swatch" style="background:${c}" data-action="set-accent" data-color="${c}" aria-label="Accent ${c}" aria-pressed="${d.accent === c}"></button>`).join('')}</div>`;
+    else body = `<p class="sub">Drag to reorder. Untick a section to leave it out of this version.</p>
         <ol class="order-list" id="orderList">${v.order.map((k, i) => `
           <li data-row="order" data-i="${i}" class="${v.hiddenSections.includes(k) ? 'off' : ''}">
             <span class="grip" draggable="true" data-drag="order" data-i="${i}" aria-hidden="true">⋮⋮</span>
             <label class="tick"><input type="checkbox" data-sec="${k}" ${v.hiddenSections.includes(k) ? '' : 'checked'}><span class="sr">Show section</span></label>
-            <span class="name">${esc(UCV.sectionTitle(store, k))}</span>
+            <span class="name">${esc(k === 'summary' ? 'Profile' : UCV.sectionTitle(store, k))}</span>
             <button class="icon-btn" data-action="move-sec" data-i="${i}" data-dir="-1" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button>
             <button class="icon-btn" data-action="move-sec" data-i="${i}" data-dir="1" aria-label="Move down" ${i === v.order.length - 1 ? 'disabled' : ''}>↓</button>
-          </li>`).join('')}</ol>
-      </section>`;
+          </li>`).join('')}</ol>`;
+    return `<section class="panel d-panel">${nav}<div class="d-body">${body}</div></section>`;
   }
 
   const ringColor = n => n >= 80 ? 'var(--good)' : n >= 55 ? 'var(--warn)' : 'var(--bad)';
+  const checkNav = () => `<div class="d-subs" role="tablist" aria-label="Check"><button role="tab" data-tab="score" aria-selected="${tab === 'score'}">CV check</button><button role="tab" data-tab="match" aria-selected="${tab === 'match'}">Job match</button></div>`;
   function renderScore() {
     const s = UCV.score(res(), pages);
     const verdict = s.score >= 85 ? 'Ready to send' : s.score >= 65 ? 'Nearly there' : 'Needs work';
+    const fails = [], passes = [];
+    s.cats.forEach(c => c.list.forEach(k => (k.ok ? passes : fails).push(Object.assign({ cat: c.name }, k))));
     return `
-      <section class="panel">
+      <section class="panel c-panel">${checkNav()}
         <div class="score">
           <div class="ring big" style="--v:${s.score};--c:${ringColor(s.score)}"><span>${s.score}</span></div>
           <div><div class="eyebrow">CV score</div><h2>${verdict}</h2>
-          <p class="hint">${s.fails ? `${s.fails} thing${s.fails > 1 ? 's' : ''} to fix. The score updates as you type.` : 'Every check passes.'}${s.match ? '' : ' Paste a job advert under Job match to add keyword checks.'}</p></div>
+          <p class="hint">${fails.length ? `${fails.length} thing${fails.length > 1 ? 's' : ''} to fix. The score updates as you type.` : 'Every check passes.'}${s.match ? '' : ' Add a job advert under Job match for keyword checks.'}</p></div>
         </div>
         <div class="cat-row">${s.cats.map(c => `<div class="cat"><b style="color:${ringColor(c.pct)}">${c.pct}%</b><span>${c.name}</span></div>`).join('')}</div>
       </section>
-      ${s.cats.map(c => `
-        <section class="panel">
-          <h2>${c.name}</h2>
-          <ul class="checks">${c.list.slice().sort((a, b) => a.ok - b.ok).map(k => `
-            <li class="${k.ok ? 'ok' : 'no'}"><span class="mark" aria-hidden="true">${k.ok ? '✓' : '✕'}</span>
-              <div><b>${esc(k.label)}</b>${k.detail ? `<p>${esc(k.detail)}</p>` : ''}</div><span class="sr">${k.ok ? 'Passed' : 'Needs attention'}</span></li>`).join('')}</ul>
-        </section>`).join('')}`;
+      ${fails.length ? `<section class="panel">
+        <h2>To fix <span class="count">${fails.length}</span></h2>
+        <ul class="checks">${fails.map(k => `
+          <li class="no"><span class="mark" aria-hidden="true">✕</span>
+            <div><b>${esc(k.label)}</b>${k.detail ? `<p>${esc(k.detail)}</p>` : ''}<span class="c-cat">${esc(k.cat)}</span></div><span class="sr">Needs attention</span></li>`).join('')}</ul>
+      </section>` : ''}
+      <details class="panel c-passed"><summary><h2>Passed <span class="count">${passes.length}</span></h2></summary>
+        <ul class="checks">${passes.map(k => `
+          <li class="ok"><span class="mark" aria-hidden="true">✓</span><div><b>${esc(k.label)}</b></div><span class="sr">Passed</span></li>`).join('')}</ul>
+      </details>`;
   }
 
   function matchResultsHTML() {
@@ -633,7 +683,7 @@
   }
   function renderMatch() {
     return `
-      <section class="panel">
+      <section class="panel c-panel">${checkNav()}
         <h2>Tailor to a job</h2>
         <p class="sub">Paste the job advert. Matching runs on your device; nothing is sent anywhere.</p>
         <div class="stack">${targetFields()}
@@ -1132,9 +1182,11 @@
   }
 
   document.addEventListener('click', e => {
+    if (!e.target.closest('[data-action="dl-menu"]')) closeDlMenu();
     const tabBtn = e.target.closest('[data-tab]');
     if (tabBtn) {
       const was = tab; tab = tabBtn.dataset.tab;
+      if (tabBtn.dataset.sub) designSub = tabBtn.dataset.sub;
       if (document.body.classList.contains('panel-off')) { document.body.classList.remove('panel-off'); const pb = $('[data-action="toggle-panel"]'); if (pb) pb.textContent = 'Hide panel'; }
       if (tab === 'design' && !(store.journey || {}).design) { (store.journey = store.journey || {}).design = true; persist(); }
       try { history.replaceState(null, '', '#' + tab); } catch (_) {}
@@ -1157,6 +1209,10 @@
     switch (a) {
       case 'start-blank': store = UCV.freshStore(false); store.isNew = false; UCV.save(store); tab = 'edit'; renderAll(); toast('Blank CV ready.'); break;
       case 'start-example': store.isNew = false; persist(); tab = 'home'; renderAll(); break;
+      case 'dl-menu': { const m = $('#dlMenu'); m.hidden = !m.hidden; btn.setAttribute('aria-expanded', String(!m.hidden)); if (!m.hidden) m.querySelector('button').focus(); break; }
+      case 'open-item': { const pth = btn.dataset.path; openItems[pth] = openItems[pth] === btn.dataset.id ? '-' : btn.dataset.id; renderPanel(); break; }
+      case 'open-sec': { const k = btn.dataset.k; openSec = openSec === k ? '' : k; renderPanel(); const el = $(`[data-sec-row="${k}"]`); if (el && openSec) el.scrollIntoView({ block: 'nearest' }); break; }
+      case 'design-sub': designSub = btn.dataset.k; renderPanel(); break;
       case 'toggle-panel': document.body.classList.toggle('panel-off'); btn.textContent = document.body.classList.contains('panel-off') ? 'Show panel' : 'Hide panel'; fitPaper(); break;
       case 'toggle-preview': document.body.classList.toggle('show-preview'); syncPreviewBtn(); fitPaper(); window.scrollTo(0, 0); break;
       case 'restart': armed(btn, 'Click again to start over', () => { store = UCV.freshStore(true); UCV.save(store); tab = 'edit'; importNote = false; renderAll(); }); break;
@@ -1188,9 +1244,10 @@
           if (oldestFirst) fresh.startDate = last.endDate || ''; else fresh.endDate = last.startDate || '';
         }
         list.push(fresh);
-        openGroups.add(btn.dataset.path.startsWith('custom') ? 'c:' + m.custom[+btn.dataset.path.split('.')[1]].id : btn.dataset.section);
+        openSec = btn.dataset.path.startsWith('custom') ? 'c:' + m.custom[+btn.dataset.path.split('.')[1]].id : btn.dataset.section;
+        openGroups.add(openSec); openItems[btn.dataset.path] = fresh.id;
         redraw();
-        setTimeout(() => { const items = $$('.item', btn.closest('.group-body')); items[items.length - 1]?.querySelector('input[type=text], input[type=email]')?.focus(); }, 0);
+        setTimeout(() => { $('#panel .item.is-open input[type=text], #panel .item.is-open input[type=month]')?.focus(); }, 0);
         break;
       }
       case 'remove-item': armed(btn, 'Remove?', () => { getPath(m, btn.dataset.path).splice(i, 1); redraw(); }); break;
@@ -1221,7 +1278,7 @@
       case 'set-skillstyle': v.design.skillStyle = btn.dataset.v === 'tags' ? 'tags' : 'list'; redraw(); break;
       case 'add-section': {
         const c = { id: UCV.uid('c'), title: btn.dataset.title || 'New section', items: [Object.assign(UCV.blankItem('customItem'))] };
-        m.custom.push(c); store.versions.forEach(x => UCV.fixOrder(store, x)); openGroups.add('c:' + c.id); redraw();
+        m.custom.push(c); store.versions.forEach(x => UCV.fixOrder(store, x)); openGroups.add('c:' + c.id); openSec = 'c:' + c.id; redraw();
         break;
       }
       case 'remove-section': armed(btn, 'Delete section?', () => { m.custom.splice(i, 1); store.versions.forEach(x => UCV.fixOrder(store, x)); redraw(); }); break;
@@ -1303,6 +1360,11 @@
     }
   });
 
+  function syncHead() { // keep the Write header card in step while its fields are typed in
+    const bs = store.master.basics, w = $('.w-who'); if (!w) return;
+    w.querySelector('b').textContent = bs.name || 'Your name';
+    w.querySelector('span').textContent = [active().label, bs.location].filter(Boolean).join(' · ') || 'Title, contact details and photo';
+  }
   document.addEventListener('input', e => {
     const t = e.target, v = active(), d = t.dataset;
     if (d.rv && review) { setPath(review.cv, d.rv, t.value); return; }
@@ -1311,8 +1373,9 @@
       if (d.bullet) autosize(t);
       const mt = d.m.match(/^(.*)\.(\d+)\.[a-zA-Z]+$/);
       if (mt) { const el = $(`[data-title="${mt[1]}.${mt[2]}"]`); if (el) { const sec = mt[1].startsWith('custom') ? 'custom' : mt[1]; el.textContent = itemTitle(sec, getPath(store.master, mt[1] + '.' + mt[2])); } }
+      if (/^basics\./.test(d.m)) syncHead();
       persist(); renderPreview(); debounce(refreshScoreBadge, 300);
-    } else if (d.v) { v[d.v] = t.value; persist(); renderPreview(); debounce(refreshScoreBadge, 300); }
+    } else if (d.v) { v[d.v] = t.value; if (d.v === 'label') syncHead(); persist(); renderPreview(); debounce(refreshScoreBadge, 300); }
     else if (d.target) { v.target[d.target] = t.value; persist(); debounce(refreshMatch, 250); debounce(refreshScoreBadge, 400); if (tab === 'letter') renderPreview(); }
     else if (d.letter) { v.letter[d.letter] = t.value; persist(); renderPreview(); }
     else if (d.d && t.type === 'range') { v.design[d.d] = +t.value; $('#d-' + d.d + '-val').textContent = t.value + (d.unit || ''); persist(); renderPreview(); debounce(refreshScoreBadge, 300); }
@@ -1460,6 +1523,5 @@
   if (ALL_TABS.includes(h)) { tab = h; if (store.isNew && h !== 'edit') store.isNew = false; }
   else if (!store.isNew) tab = 'home';
   renderAll();
-  setPreviewSize(pvStart);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { renderPreview(); renderBar(); });
 })();
