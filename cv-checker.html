@@ -34,11 +34,12 @@
  "description": "Free CV checker for Ireland and the UK. Marks what recruiters notice on your own CV, with a reason and a fix for each one. Your CV is read in your browser and never uploaded."
 }
 </script>
-<script src="assets/boot.js?v=32"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=32">
-<link rel="stylesheet" href="assets/styles.css?v=32">
+<script src="assets/boot.js?v=33"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=33">
+<link rel="stylesheet" href="assets/styles.css?v=33">
 </head>
 <body>
+  <div class="h-dark h-dark-nav">
   <nav class="r-nav" aria-label="Main">
     <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID<span class="beta-tag">Beta</span></a>
     <div class="r-links">
@@ -49,11 +50,13 @@
     </div>
     <a class="btn btn-primary r-nav-cta" href="cv-checker.html">Check my CV free</a>
   </nav>
+  </div>
   <main>
-  <header class="page-head">
-    <span class="beta-tag beta-tag-lg">Beta</span>
+  <header class="ph">
+    <span class="h-eyebrow">Beta · Free for Ireland and the UK</span>
     <h1>Free CV checker</h1>
     <p class="r-lede">See what a recruiter notices, marked on your own CV. Every fix tells you why, and what to add.</p>
+    <div class="ph-tool">
     <label class="ck-drop" id="ckDrop" for="ckFileInput">
       <span class="ck-up" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1A1919" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
       <span><b>Drop your CV here, or choose a file</b><span>PDF or Word. Read in your browser, never uploaded.</span></span>
@@ -71,6 +74,7 @@
         <div class="ck-pasterow"><button class="btn btn-primary" type="submit">Check</button><label for="ckHasPhoto"><input type="checkbox" id="ckHasPhoto"> My CV has a photo</label></div>
       </form>
     </details>
+    </div>
   </header>
   <section class="ck" id="ckReport" hidden aria-label="Your CV report">
     <div class="ck-bar">
@@ -118,7 +122,15 @@
     <a class="next-link" href="cv-builder.html">Then fix it in the free CV builder</a>
   </section>
   </main>
-  <footer class="r-foot">
+  <section class="h-dark h-close">
+    <h2>Then build the CV that gets read.</h2>
+    <p>Tailor it to every job and keep track of where it went.</p>
+    <div class="h-ctas">
+      <a class="btn btn-primary r-btn-lg" href="app.html">Build your CV free</a>
+      <a class="h-btn-ghost" href="faq.html">Read the FAQ</a>
+    </div>
+  </section>
+  <footer class="r-foot h-foot">
     <span>Universal CV ID, open source under the MIT licence</span>
     <span class="spacer"></span>
     <a href="about.html">About and roadmap</a>
@@ -127,7 +139,7 @@
     <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Give feedback</a>
     <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
   </footer>
-<script src="assets/check.js?v=32" defer></script>
+<script src="assets/check.js?v=33" defer></script>
 <!-- Cloudflare Web Analytics: anonymous visit counts, no cookies. Not loaded on share pages (p.html). --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "1879d12eedaf4b739530700ef3285989"}'></script>
 </body>
 </html>

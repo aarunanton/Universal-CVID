@@ -1781,3 +1781,43 @@ h2 .count { font: 600 13px/1 var(--font); color: var(--ink-3); margin-left: .35r
   body:not(.mode-dash):not(.is-start) .ver-chip .sw { white-space: nowrap; }
 }
 @media (max-width: 760px) { body:not(.mode-dash):not(.is-start) .bar-actions { margin-left: auto; } }
+
+/* ================= v33: one design across every page =================
+   Every marketing page now follows the homepage: dark navigation and header band,
+   a lime pill above a centred heading, centred reading columns, and a dark closing band. */
+.ph { background: var(--night); color: #F2F2F5; text-align: center; padding: clamp(40px, 6vw, 72px) 24px clamp(48px, 6vw, 80px); display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.ph h1 { margin: 0; max-width: 20ch; color: #FFFFFF; font: 700 clamp(36px, 5vw, 60px)/1.04 var(--display); letter-spacing: -.035em; text-wrap: balance; }
+.ph > p, .ph .r-lede, .ph .r-hero-copy > p.r-lede { margin: 0; max-width: 38em; color: #B7BDCD !important; font-size: clamp(16.5px, 1.5vw, 18px); line-height: 1.55; }
+.ph .post-meta { color: #8D95A9 !important; font-size: 13px; }
+.ph a:not(.btn) { color: #FFFFFF; }
+.ph-crumb { font-size: 14px; font-weight: 600; text-decoration: none; color: #D3D7E0 !important; }
+.ph-crumb:hover { color: #FFFFFF !important; text-decoration: underline; text-underline-offset: 4px; }
+/* the checker's upload box sits on the band as a white card */
+.ph-tool { width: 100%; max-width: 680px; margin-top: 8px; background: var(--surface); color: var(--ink); border-radius: 18px; padding: clamp(16px, 3vw, 24px); text-align: left; box-shadow: 0 24px 60px rgba(10, 10, 20, .28); }
+.ph-tool .ck-drop { margin-top: 0; max-width: none; }
+.ph-tool .ck-more { margin-top: 12px; }
+.ph-tool a, .ph-tool .r-textlink { color: var(--ink) !important; }
+/* the builder page: copy centred on the band, screenshot overlapping the band's lower edge like the homepage */
+.ph.ph-shot { padding-bottom: 0; background: linear-gradient(var(--night) calc(100% - min(1120px, 100vw - 48px) * .36), transparent 0); }
+.ph .r-hero-copy { max-width: 820px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.ph .r-hero-copy h1 { color: #FFFFFF; }
+.ph .r-ctas { justify-content: center; margin: 4px 0 0; }
+.ph .r-ctas a:not(.btn) { color: #FFFFFF; }
+.ph .r-checks { justify-content: center; color: #8D95A9; margin: 0; }
+.ph .r-checks li { color: #B7BDCD; }
+.ph .r-hero-shot { width: 100%; max-width: 1120px; margin: clamp(12px, 3vw, 28px) auto 0; box-shadow: 0 24px 60px rgba(10, 10, 20, .28); }
+@media (max-width: 560px) { .ph.ph-shot { background: linear-gradient(var(--night) calc(100% - 380px), transparent 0); } }
+
+/* reading pages: one centred column */
+.doc { max-width: 820px !important; margin: 0 auto !important; padding: clamp(32px, 5vw, 56px) 16px 0 !important; }
+.doc-card, .post-card, .faq-item, .h-steps li { border-radius: 14px; }
+.page-head + .section, .ph + .section { padding-top: clamp(48px, 7vw, 88px) !important; }
+/* section headings match the homepage */
+.r-section > h2, .r-h2, .faq-group > h2 { font: 700 clamp(28px, 3.8vw, 46px)/1.05 var(--display) !important; letter-spacing: -.03em; text-wrap: balance; }
+.faq-group > h2 { font-size: clamp(24px, 2.6vw, 32px) !important; }
+.r-section, .faq { max-width: 1200px; }
+main > .section:has(.faq-group) { max-width: 820px; }
+/* closing band and footer are the same everywhere */
+.h-close { margin-top: clamp(64px, 8vw, 104px); }
+.h-close + .h-foot, .h-close + footer { border-top: 0 !important; margin-top: 0 !important; }
+.h-dark-nav .r-links a.nav-on { color: #FFFFFF !important; text-decoration: underline; text-decoration-color: #E4F222; text-decoration-thickness: 2px; text-underline-offset: 6px; }

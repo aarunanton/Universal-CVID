@@ -9,27 +9,31 @@
 <meta name="theme-color" content="#F4F2F0">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://cvid.app/blog/">
-<script src="../assets/boot.js?v=32"></script>
-<link rel="stylesheet" href="../assets/fonts/fonts.css?v=32">
-<link rel="stylesheet" href="../assets/styles.css?v=32">
+<script src="../assets/boot.js?v=33"></script>
+<link rel="stylesheet" href="../assets/fonts/fonts.css?v=33">
+<link rel="stylesheet" href="../assets/styles.css?v=33">
 </head>
 <body>
+  <div class="h-dark h-dark-nav">
   <nav class="r-nav" aria-label="Main">
     <a class="brand" href="../index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID<span class="beta-tag">Beta</span></a>
     <div class="r-links">
       <a href="../cv-checker.html">CV checker</a>
       <a href="../cv-builder.html">CV builder</a>
       <a href="../faq.html">FAQ</a>
-      <a href="../blog/index.html">Blog</a>
+      <a class="nav-on" href="../blog/index.html" aria-current="page">Blog</a>
     </div>
     <a class="btn btn-primary r-nav-cta" href="../cv-checker.html">Check my CV free</a>
   </nav>
+  </div>
 
-  <main class="doc blog">
-    <header class="doc-head">
-      <h1>CV guides, and what we are building.</h1>
-      <p>Practical guides for getting your CV read, and plain notes on what works today and what comes next. We say when plans change.</p>
-    </header>
+  <main>
+  <header class="ph">
+    <span class="h-eyebrow">Blog</span>
+    <h1>CV guides, and what we are building.</h1>
+    <p>Practical guides for getting your CV read, and plain notes on what works today and what comes next. We say when plans change.</p>
+  </header>
+  <div class="doc blog">
     <div class="post-list">
       <a class="post-card" href="not-getting-interviews.html"><span class="ntag ntag-guide">CV guide</span><h2>Not getting interviews? 7 things wrong with most CVs</h2><p>The CV problems reviewers point out most often, with a fix for each one.</p></a>
       <a class="post-card" href="cv-ireland.html"><span class="ntag ntag-guide">CV guide</span><h2>How to write a CV for Irish employers (2026)</h2><p>How long it should be, what to leave out, and what to put at the top.</p></a>
@@ -47,8 +51,17 @@
       <h2>An ongoing project</h2>
       <p>We are starting with free tools for job seekers, and building toward recruitment that works better for both sides. <a href="../about.html#vision">Where this is going</a></p>
     </section>
+  </div>
   </main>
-  <footer class="r-foot">
+  <section class="h-dark h-close">
+    <h2>See what a recruiter would notice.</h2>
+    <p>Free, private, no sign-up.</p>
+    <div class="h-ctas">
+      <a class="btn btn-primary r-btn-lg" href="../cv-checker.html">Check my CV free</a>
+      <a class="h-btn-ghost" href="../cv-builder.html">Build your CV</a>
+    </div>
+  </section>
+  <footer class="r-foot h-foot">
     <span>Universal CV ID, open source under the MIT licence</span>
     <span class="spacer"></span>
     <a href="../about.html">About and roadmap</a>
