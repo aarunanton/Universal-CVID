@@ -29,8 +29,8 @@
   --card-b: #41326A;
   --shadow: 0 1px 2px rgba(15, 10, 31, .08), 0 10px 28px rgba(15, 10, 31, .10);
   --radius: 14px;
-  --font: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --display: 'Bricolage Grotesque', 'IBM Plex Sans', system-ui, sans-serif;
+  --font: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'UCV Display', 'EB Garamond', Georgia, serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --dot: 'Doto', 'IBM Plex Mono', ui-monospace, monospace;
   color-scheme: light;
@@ -1821,3 +1821,42 @@ main > .section:has(.faq-group) { max-width: 820px; }
 .h-close { margin-top: clamp(64px, 8vw, 104px); }
 .h-close + .h-foot, .h-close + footer { border-top: 0 !important; margin-top: 0 !important; }
 .h-dark-nav .r-links a.nav-on { color: #FFFFFF !important; text-decoration: underline; text-decoration-color: #E4F222; text-decoration-thickness: 2px; text-underline-offset: 6px; }
+
+/* ================= v34: Garamond headings with an italic accent, and both tools on the homepage ================= */
+h1, h2, h3, .r-h2 { font-kerning: normal; }
+h1 em, h2 em, h3 em { font-style: italic; font-weight: inherit; }
+.h-hero h1, .ph h1, .h-close h2, .h-head h2, .h-how h2, .h-fair h2, .r-section > h2, .r-h2 { letter-spacing: -.025em; line-height: 1; }
+.h-hero h1 { font-size: clamp(42px, 6.2vw, 80px); max-width: 15ch; }
+.brand { font-family: var(--font); font-weight: 700; letter-spacing: -.01em; }
+.h-kicker, .h-eyebrow { font-family: var(--font); }
+.h-eyebrow { letter-spacing: .02em; }
+/* product switch, like a two-way toggle */
+.h-switch { display: inline-flex; gap: 4px; padding: 4px; margin-top: 6px; border-radius: 999px; background: #2B2A29; border: 1px solid #3A3938; }
+.h-switch button { border: 0; background: transparent; color: #D3D7E0; font: 600 15px/1 var(--font); height: 42px; padding: 0 20px; border-radius: 999px; cursor: pointer; }
+.h-switch button:hover { color: #FFFFFF; }
+.h-switch button[aria-selected="true"] { background: #FFFFFF; color: #1A1919; }
+.h-switch button:focus-visible { outline: 2px solid #E4F222; outline-offset: 2px; }
+.h-tool-pane { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 22px; }
+.h-tool-pane[hidden] { display: none; }
+.h-hero[data-tool="build"] { background: linear-gradient(var(--night) calc(100% - min(1120px, 100vw - 48px) * .331 - 34px), transparent 0); }
+/* two tools, side by side */
+.h-tools { max-width: 1200px; margin: clamp(64px, 8vw, 104px) auto 0; padding: 0 24px; display: flex; flex-direction: column; gap: 28px; }
+.h-tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.h-tool { border-radius: 20px; padding: clamp(24px, 3.4vw, 40px); display: flex; flex-direction: column; gap: 14px; }
+.h-tool h3 { margin: 0; font: 500 clamp(28px, 3vw, 38px)/1.05 var(--display); letter-spacing: -.02em; color: var(--ink); text-wrap: balance; }
+.h-tool ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.h-tool li { position: relative; padding-left: 26px; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
+.h-tool li::before { content: ''; position: absolute; left: 0; top: .45em; width: 14px; height: 8px; border-left: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-45deg); }
+.h-tool-ctas { margin-top: auto; padding-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+.h-tool-ctas a:not(.btn) { color: var(--ink); font-weight: 600; text-underline-offset: 4px; }
+@media (max-width: 560px) { .h-switch button { padding: 0 16px; font-size: 14.5px; } .h-tools { padding: 0 16px; } }
+.h-hero h1 { line-height: 1.02; padding-bottom: 6px; }
+/* inside the builder app, small UI headings stay in Figtree; only page-sized titles use the serif */
+.app-bar, .workspace, .toast-wrap { --display: 'Figtree', system-ui, sans-serif; }
+.workspace h1 { font-family: 'UCV Display', 'EB Garamond', Georgia, serif !important; font-weight: 500 !important; letter-spacing: -.02em; }
+.app-bar .brand { font-family: var(--font); }
+.dash-head h2 { font-family: 'UCV Display', 'EB Garamond', Georgia, serif !important; font-weight: 500 !important; letter-spacing: -.02em; }
+/* small labels use Figtree too; real codes (ID, machine lines, links) stay monospaced */
+:root { --mono: 'Figtree', system-ui, sans-serif; }
+.idcard-top, .idcard-id, .idcard-mrz, .linkbox input, .vv-files, .mono, .cv-page .mono { font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace !important; }
+.h-close h2 { max-width: 24ch; }

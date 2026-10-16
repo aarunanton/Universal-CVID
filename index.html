@@ -45,9 +45,9 @@
  ]
 }
 </script>
-<script src="assets/boot.js?v=33"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=33">
-<link rel="stylesheet" href="assets/styles.css?v=33">
+<script src="assets/boot.js?v=34"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=34">
+<link rel="stylesheet" href="assets/styles.css?v=34">
 </head>
 <body>
   <div class="h-dark h-dark-nav">
@@ -63,21 +63,38 @@
   </nav>
   </div>
   <main>
-  <header class="h-hero">
+  <header class="h-hero" id="heroTools" data-tool="check">
     <div class="h-hero-copy">
-      <span class="h-eyebrow">New · Free CV checker for Ireland and the UK</span>
-      <h1>Not getting interviews? See what your CV is missing.</h1>
-      <p class="h-lede">Drop in your CV and see what a recruiter would notice, marked on your own page, with a fix for each one.</p>
+      <span class="h-eyebrow">Free · No sign-up · Ireland and the UK</span>
+      <h1>Check your CV. <em>Build the one that gets read.</em></h1>
+      <p class="h-lede">Two free tools that work together. The CV checker marks what a recruiter would notice on your own page. The CV builder turns it into a clean CV for every job, and keeps track of where you sent it.</p>
+      <div class="h-switch" role="tablist" aria-label="Choose a tool">
+        <button type="button" role="tab" id="tabCheck" aria-controls="heroCheck" aria-selected="true" data-tool="check">CV checker</button>
+        <button type="button" role="tab" id="tabBuild" aria-controls="heroBuild" aria-selected="false" data-tool="build">CV builder</button>
+      </div>
+    </div>
+    <div class="h-tool-pane" id="heroCheck" role="tabpanel" aria-labelledby="tabCheck">
       <div class="h-ctas">
         <a class="btn btn-primary r-btn-lg" href="cv-checker.html">Check my CV free</a>
         <a class="h-link-light" href="cv-checker.html#example">Try it with an example CV →</a>
       </div>
-      <p class="h-small">Free, no sign-up · Your CV never leaves your browser</p>
+      <p class="h-small">Your CV is read in your browser and never uploaded</p>
+      <figure class="h-shot">
+        <img src="assets/img/hero-check.webp?v=34" width="2368" height="1480" alt="The CV check: an example CV with problem lines highlighted and numbered, and a short list of fixes beside it.">
+        <figcaption><span>CV checker, shown with an example CV</span><span>Private · Runs in your browser · Nothing stored</span></figcaption>
+      </figure>
     </div>
-    <figure class="h-shot">
-      <img src="assets/img/hero-check.webp" width="2368" height="1480" alt="The CV check: an example CV with problem lines highlighted and numbered, and a short list of fixes beside it.">
-      <figcaption><span>Shown with an example CV</span><span>Private · Runs in your browser · Nothing stored</span></figcaption>
-    </figure>
+    <div class="h-tool-pane" id="heroBuild" role="tabpanel" aria-labelledby="tabBuild" hidden>
+      <div class="h-ctas">
+        <a class="btn btn-primary r-btn-lg" href="app.html">Build my CV free</a>
+        <a class="h-link-light" href="app.html?example=1">Try it with an example CV →</a>
+      </div>
+      <p class="h-small">PDF and Word downloads · Saved in your own browser</p>
+      <figure class="h-shot">
+        <img src="assets/img/hero-builder.webp?v=34" width="2040" height="1350" loading="lazy" alt="The CV builder in Write mode: sections in print order on the left and the A4 page on the right, with Write, Design and Check at the top.">
+        <figcaption><span>CV builder, shown with an example CV</span><span>Write · Design · Check</span></figcaption>
+      </figure>
+    </div>
   </header>
 
   <section class="h-proof" aria-label="How the checker was tested">
@@ -87,10 +104,39 @@
     <div class="h-stat"><b>0</b><span class="h-stat-t">CVs stored</span><span>The check runs on your device.</span></div>
   </section>
 
+  <section class="h-tools" aria-labelledby="toolsTitle">
+    <div class="h-head">
+      <span class="h-kicker">Two free tools, one CV</span>
+      <h2 id="toolsTitle">Find what is holding it back. <em>Then build it right.</em></h2>
+    </div>
+    <div class="h-tool-grid">
+      <article class="h-tool h-tint-lime">
+        <span class="h-kicker">CV checker</span>
+        <h3>See what a recruiter would notice.</h3>
+        <ul>
+          <li>Problem lines marked on your own page, latest job first</li>
+          <li>A reason and a suggested fix for every flag</li>
+          <li>Paste a job advert to see what it asks for that your CV doesn’t show</li>
+        </ul>
+        <div class="h-tool-ctas"><a class="btn btn-primary" href="cv-checker.html">Check my CV free</a><a href="cv-checker.html#example">See an example →</a></div>
+      </article>
+      <article class="h-tool h-tint-sky">
+        <span class="h-kicker">CV builder</span>
+        <h3>One CV for every job, and know where each one went.</h3>
+        <ul>
+          <li>Import your old CV, then write, design and check it in one place</li>
+          <li>Six A4 templates, grouped skills and one-click fit to a page</li>
+          <li>Tailor a version to each job advert and track every application</li>
+        </ul>
+        <div class="h-tool-ctas"><a class="btn btn-primary" href="app.html">Build my CV free</a><a href="cv-builder.html">See the builder →</a></div>
+      </article>
+    </div>
+  </section>
+
   <section class="h-features">
     <div class="h-head">
       <span class="h-kicker">What changes for your CV</span>
-      <h2>Fewer guesses, and a CV that says what you did.</h2>
+      <h2>Fewer guesses, <em>and a CV that says what you did.</em></h2>
       <p>Three parts of getting a job, shown with one example CV. You stay in charge of every word.</p>
     </div>
 
@@ -134,7 +180,7 @@
   <section class="h-fair">
     <div class="h-fair-copy">
       <span class="h-kicker">Fair by design</span>
-      <h2>We check the document. Never the person.</h2>
+      <h2>We check the document. <em>Never the person.</em></h2>
       <p>Every flag comes from a written rule with a reason you can read. Nothing is a mystery score, and you decide what to change.</p>
       <a class="h-link-lime" href="blog/not-getting-interviews.html">How we judge a CV →</a>
     </div>
@@ -166,11 +212,11 @@
   </section>
 
   <section class="h-dark h-close">
-    <h2>See what a recruiter would notice.</h2>
+    <h2>Check it. Build it. <em>Send it.</em></h2>
     <p>Free, private, no sign-up.</p>
     <div class="h-ctas">
       <a class="btn btn-primary r-btn-lg" href="cv-checker.html">Check my CV free</a>
-      <a class="h-btn-ghost" href="faq.html">Read the FAQ</a>
+      <a class="h-btn-ghost" href="app.html">Build my CV free</a>
     </div>
   </section>
   </main>
@@ -184,5 +230,6 @@
     <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
   </footer>
 <!-- Cloudflare Web Analytics: anonymous visit counts, no cookies. Not loaded on share pages (p.html). --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "1879d12eedaf4b739530700ef3285989"}'></script>
+<script src="assets/hero-switch.js?v=34" defer></script>
 </body>
 </html>
