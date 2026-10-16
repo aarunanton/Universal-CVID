@@ -68,7 +68,10 @@ function parseCV(text){
   const jobs=[]; let cur=null;
   lines.forEach((l,i)=>{
     if(l.section!=='exp'){ cur=null; return; }
-    if(l.kind==='job'){ cur={head:i,bullets:[],paras:[]}; jobs.push(cur); }
+    if(l.kind==='job'){
+      // A title line and a company line belong to one job, e.g. "Engineer, 2018 - 2023" then "SEAM, Waterford".
+      if(cur && !cur.bullets.length && !cur.paras.length && cur.sub.length<2 && (!years(cur.ht).length || !years(l.text).length)){ cur.sub.push(i); cur.ht += ' ' + l.text; l.kind='jobsub'; return; }
+      cur={head:i,sub:[],ht:l.text,bullets:[],paras:[]}; jobs.push(cur); }
     else if(l.kind==='bullet' && cur) cur.bullets.push(i);
     else if(l.kind==='para'){ if(cur) cur.paras.push(i); }
   });
@@ -138,17 +141,17 @@ function analyze(text, advert, ans, meta){
 
   // Dates style (L4)
   const styles = new Set();
-  P.jobs.forEach(j=>{ const t=L[j.head].text.toLowerCase();
+  P.jobs.forEach(j=>{ const t=j.ht.toLowerCase();
     if(new RegExp(MONTH+'\\.?\\s+(19|20)\\d{2}').test(t)) styles.add('month');
     if(/\b\d{1,2}\/(19|20)\d{2}\b/.test(t)) styles.add('numeric');
     const yrs = years(t).length, rich = (t.match(new RegExp(MONTH+'\\.?\\s+(19|20)\\d{2}','g'))||[]).length + (t.match(/\b\d{1,2}\/(19|20)\d{2}/g)||[]).length;
     if(yrs>rich) styles.add('year'); });
-  if(styles.size>1){ const j=P.jobs.find(j=>/(19|20)\d{2}/.test(L[j.head].text)); add('L4','read','fix',j?j.head:-1,'Mixed date styles','Pick one date style and use it everywhere, like "Mar 2021 – Present".','The month you started and finished each job'); }
+  if(styles.size>1){ const j=P.jobs.find(j=>/(19|20)\d{2}/.test(j.ht)); add('L4','read','fix',j?j.head:-1,'Mixed date styles','Pick one date style and use it everywhere, like "Mar 2021 – Present".','The month you started and finished each job'); }
 
   // Jobs
-  let prevLatest = null, orderFlagged = false; const curJobs = P.jobs.filter(j=>isCurrent(L[j.head].text)).length;
+  let prevLatest = null, orderFlagged = false; const curJobs = P.jobs.filter(j=>isCurrent(j.ht)).length;
   P.jobs.forEach((j,ji)=>{
-    const h = L[j.head].text, ys = years(h);
+    const h = j.ht, ys = years(h);
     if(!ys.length) add('E5','missing','fix',j.head,'Job with no dates','Add the month and year you started and finished.','Start and end dates',null,null,'+ dates');
     const latest = isCurrent(h) ? 9999 : (ys.length?Math.max(...ys):null);
     if(!orderFlagged && prevLatest!==null && latest!==null && latest>prevLatest){ add('E6','read',curJobs>=2?'tip':'fix',j.head,'Latest job not first',curJobs>=2?'You list two current jobs. Check the order matches what you want read first.':'Put your latest job first. Recruiters read top down.',null); orderFlagged=true; }
@@ -266,7 +269,7 @@ function analyze(text, advert, ans, meta){
     if(dot.length && no.length){ const minority = dot.length<no.length?dot:no; add('R11','read','tip',minority[0][1],'Mixed punctuation',`${dot.length} ${dot.length===1?'line ends':'lines end'} with a full stop and ${no.length} ${no.length===1?'doesn\'t':'don\'t'}. End every line the same way.`,null); } }
   // R8 school details after work (never when it's the only education)
   const eduCount = L.filter(l=>l.section==='edu' && l.kind!=='heading' && l.kind!=='blank').length;
-  const jy = P.jobs.flatMap(j=>{ const h=L[j.head].text; const y=years(h); if(isCurrent(h)) y.push(new Date().getFullYear()); return y; });
+  const jy = P.jobs.flatMap(j=>{ const h=j.ht; const y=years(h); if(isCurrent(h)) y.push(new Date().getFullYear()); return y; });
   if(jy.length && Math.max(...jy)-Math.min(...jy)>=2){
     L.forEach((l,i)=>{ const m=l.text.match(/leaving cert(ificate)?( applied)?( results)?|junior cert|a[- ]levels?|gcses?|\bgpa\b|\d{3} points|grades:/i);
       if(m && l.kind!=='heading' && eduCount>1) add('R8','read','tip',i,'School details',`You can drop "${m[0]}" now. Your jobs say more.`,null,null,[m.index,m.index+m[0].length]); });
@@ -494,17 +497,20 @@ function renderGroups(){
 function seg(name,opts){ return '<div class="ck-seg" role="group">'+opts.map(([v,l])=>`<button type="button" data-a="${name}" data-v="${v}" aria-pressed="${S.ans[name]===v}">${l}</button>`).join('')+'</div>'; }
 function renderElig(){
   const a=S.ans, done=[a.work,a.licence,a.town,a.start].filter(Boolean).length;
+  const topL=(R&&R.P)?R.P.lines.filter(l=>l.section==='top').map(l=>l.text).join(' ').toLowerCase():'';
+  const onCv=PLACES.find(p=>new RegExp('\\b'+p+'\\b').test(topL));
+  const townQ=onCv?`<div class="ck-q2"><span>Where are you based?</span><span class="ck-oncv">${esc(onCv.charAt(0).toUpperCase()+onCv.slice(1))} is already on your CV.</span></div>`:`<div class="ck-q2"><span>Where are you based?</span><div class="ck-inl"><input type="text" id="ckTown" placeholder="Town or county" value="${esc(a.town)}" aria-label="Town or county"><label class="ck-inl"><input type="checkbox" id="ckReloc"${a.relocate?' checked':''}> Open to relocating</label></div></div>`;
   $('#ckElig').innerHTML=`<h2>Employers ask these first</h2>
     <p>Many job sites ask yes or no questions before anyone reads your CV. Put the answers on your CV too, so nobody has to guess.</p>
     <div class="ck-q2"><span>Can you work in <select id="ckCountry" aria-label="Country">${['Ireland','the UK','the EU'].map(c=>`<option${a.country===c?' selected':''}>${c}</option>`).join('')}</select> without a visa?</span>${seg('work',[['yes','Yes'],['visa',"I'll need a visa"],['skip','Skip']])}</div>
     <div class="ck-q2"><span>Do you have a driving licence?</span>${seg('licence',[['full','Full licence'],['learner','Learner permit'],['none','No']])}</div>
-    <div class="ck-q2"><span>Where are you based?</span><div class="ck-inl"><input type="text" id="ckTown" placeholder="Town or county" value="${esc(a.town)}" aria-label="Town or county"><label class="ck-inl"><input type="checkbox" id="ckReloc"${a.relocate?' checked':''}> Open to relocating</label></div></div>
+    ${townQ}
     <div class="ck-q2"><span>When can you start?</span>${seg('start',[['now','Now'],['2w','2 weeks'],['1m','1 month']])}</div>
     <p class="ck-ok">${done?`${done} of 4 answered. We only add the answers that help you.`:'We only add answers that help you. Nothing negative goes on your CV.'}</p>`;
   $('#ckElig').querySelectorAll('.ck-seg button').forEach(b=>b.onclick=()=>{ S.ans[b.dataset.a]=S.ans[b.dataset.a]===b.dataset.v?'':b.dataset.v; run(); });
   $('#ckCountry').onchange=e=>{ S.ans.country=e.target.value; run(); };
-  $('#ckReloc').onchange=e=>{ S.ans.relocate=e.target.checked; run(); };
-  $('#ckTown').onchange=e=>{ S.ans.town=e.target.value.trim(); run(); };
+  const rl=$('#ckReloc'); if(rl) rl.onchange=e=>{ S.ans.relocate=e.target.checked; run(); };
+  const tn=$('#ckTown'); if(tn) tn.onchange=e=>{ S.ans.town=e.target.value.trim(); run(); };
 }
 function render(){
   if(S.mode==='pdf'&&S.pdf) renderOverlay(); else renderText();
