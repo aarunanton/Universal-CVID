@@ -433,6 +433,15 @@
     tmp.innerHTML = '';
     return out;
   }
+  function dashNext(stats, apps, today) {
+    const due = apps.filter(a => a.followUp && a.followUp <= today && (a.status === 'Applied' || a.status === 'Interview'));
+    const main = stats.find(x => x.v.vid === store.active) || stats[0];
+    if (due.length) return { t: `${due.length} follow-up${due.length > 1 ? 's' : ''} due`, d: `${due[0].role} at ${due[0].company}${due.length > 1 ? ' and more' : ''}. A short, polite note keeps you on their radar.`, b: 'See applications', a: 'data-tab="tracker"' };
+    if (main.score < 80) return { t: 'Lift your CV score', d: `Your main CV scores ${main.score}. The Check step lists exactly what to fix.`, b: 'Open Check', a: `data-action="open-version" data-vid="${main.v.vid}" data-to="score"` };
+    if (!apps.length) return { t: 'Add your first application', d: 'Save a job you are going for and track which CV you sent and what happens next.', b: '+ Add application', a: 'data-action="app-add-go"' };
+    if (main.match == null) return { t: 'Tailor your CV to a job', d: 'Paste a job ad into Job match to see which keywords your CV is missing.', b: 'Open Job match', a: `data-action="open-version" data-vid="${main.v.vid}" data-to="match"` };
+    return { t: 'You are on track', d: 'Your CV is in good shape. Keep your applications moving.', b: 'See applications', a: 'data-tab="tracker"' };
+  }
   function renderHome() {
     const m = store.master, first = (m.basics.name || '').trim().split(/\s+/)[0];
     const stats = cvStats(), apps = store.applications;
@@ -440,37 +449,46 @@
     const sent = apps.filter(a => a.status !== 'Saved').length, today = new Date().toISOString().slice(0, 10);
     const live = apps.filter(a => ['Saved', 'Applied', 'Interview'].includes(a.status)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     const avg = Math.round(stats.reduce((n, x) => n + x.score, 0) / stats.length);
+    const hr = new Date().getHours(), hello = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
+    const nx = dashNext(stats, apps, today);
+    const main = stats.find(x => x.v.vid === store.active) || stats[0], others = stats.filter(x => x !== main);
+    const v = main.v, accent = v.design.template === 'plain' ? '#111111' : (v.design.accent || '#2446C7');
+    const goal = +((store.prefs || {}).weeklyGoal) || 0, weekAgo = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+    const thisWeek = apps.filter(a => a.status !== 'Saved' && a.date && a.date >= weekAgo && a.date <= today).length;
     return `
-      <section class="dash-head">
-        <div>
-          <h2>${first ? esc(first) + '’s' : 'Your'} Universal CV</h2>
-          <p>Everything across your CVs and applications, in one place.</p></div>
-        <div class="row"><button class="btn btn-primary" data-action="app-add-go">+ Add application</button><button class="btn dash-alt" data-action="new-version">+ New CV</button><button class="btn dash-alt" data-tab="import">Import a CV</button></div>
+      <section class="d-head">
+        <div><p class="d-date">${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+          <h2>${hello}${first ? ', ' + esc(first) : ''}</h2></div>
+        <div class="row"><button class="btn btn-primary" data-action="app-add-go">+ Add application</button><button class="btn" data-action="new-version">+ New CV</button></div>
       </section>
-      <div class="kpis five">
-        <div class="kpi k-night"><b>${store.versions.length}</b><span>CV${store.versions.length === 1 ? '' : 's'}</span></div>
-        <div class="kpi k-lime"><b>${sent}</b><span>Applications sent</span></div>
-        <div class="kpi k-sky"><b>${count('Interview')}</b><span>Interviews</span></div>
-        <div class="kpi k-plain"><b>${count('Offer')}</b><span>Offers</span></div>
-        <div class="kpi k-plain"><b>${avg}</b><span>Average CV score</span></div>
-      </div>
-      <section class="panel">
-        <div class="trk-top">
-          <div><h2>Live applications</h2><p class="sub" style="margin:0">Jobs you have saved, applied for or are interviewing for.</p></div>
-          ${apps.length ? `<button class="btn btn-sm" data-tab="tracker">See all ${apps.length}</button>` : ''}
-        </div>
-        <div class="apps live">${live.length ? live.slice(0, 6).map(a => `
-          <div class="app-row live-row">
-            <button class="trk-main" data-action="app-goto" data-aid="${a.aid}"><b>${esc(a.role)}</b><span>${esc(a.company)}${a.date ? ' · ' + new Date(a.date + 'T00:00').toLocaleDateString() : ''}</span>${a.followUp && a.followUp <= today && a.status !== 'Saved' ? '<em>Follow up due</em>' : ''}</button>
-            <span class="live-cv">${esc((store.versions.find(x => x.vid === a.vid) || {}).name || 'CV removed')}</span>
-            <select class="st-sel st-${a.status}" data-app="${a.aid}" data-field="status" aria-label="Stage">${UCV.STATUSES.map(st => `<option ${st === a.status ? 'selected' : ''}>${st}</option>`).join('')}</select>
-          </div>`).join('') : '<p class="empty">Nothing live yet. Add the first job you are going for and track it from here.</p>'}</div>
-      </section>
-      <section class="panel">
-        <h2>Your CVs</h2>
-        <p class="sub">Click a CV to open it and work on its content, design, job match and export.</p>
-        ${versionCards(stats, true)}
-      </section>`;
+      <section class="d-next"><span class="d-next-ic" aria-hidden="true">→</span><div><b>${esc(nx.t)}</b><span>${esc(nx.d)}</span></div><button class="btn btn-primary" ${nx.a}>${esc(nx.b)}</button></section>
+      <div class="d-grid">
+        <section class="panel d-cv">
+          <div class="d-sec-top"><h2>Your CV</h2><button class="btn btn-sm btn-ghost" data-tab="import">Import a CV</button></div>
+          <article class="d-hero">
+            <button class="vthumb d-thumb" data-action="open-version" data-vid="${v.vid}" style="--th:${esc(accent)}" aria-label="Open ${esc(v.name)}">${tplThumb(v.design.template)}</button>
+            <div class="d-hero-body">
+              <input type="text" class="d-name" value="${esc(v.name)}" data-rename="${v.vid}" aria-label="CV name" title="Click to rename">
+              <p class="meta">${esc(v.label || 'No title yet')} · updated ${new Date(v.updatedAt).toLocaleDateString()}</p>
+              <div class="d-score"><div class="ring big" style="--v:${main.score};--c:${ringColor(main.score)}"><span>${main.score}</span></div>
+                <div class="vstats"><span><b>${main.match == null ? '–' : main.match + '%'}</b> job match</span><span><b>${main.sent}</b> sent</span><span><b>${main.interviews}</b> interviews</span></div></div>
+              <div class="ctrls"><button class="btn btn-primary" data-action="open-version" data-vid="${v.vid}">Write</button><button class="btn" data-action="open-version" data-vid="${v.vid}" data-to="design">Design</button><button class="btn" data-action="open-version" data-vid="${v.vid}" data-to="score">Check</button></div>
+            </div>
+          </article>
+          ${others.length ? `<div class="d-others"><span class="eyebrow">Other versions</span>${others.map(x => `<div class="d-other"><button class="trk-main" data-action="open-version" data-vid="${x.v.vid}"><b>${esc(x.v.name)}</b><span>${esc(x.v.label || 'No title yet')} · score ${x.score}${x.sent ? ' · ' + x.sent + ' sent' : ''}</span></button><button class="btn btn-sm" data-action="dup-version" data-vid="${x.v.vid}">Duplicate</button>${store.versions.length > 1 ? `<button class="btn btn-sm btn-danger" data-action="del-version" data-vid="${x.v.vid}">Delete</button>` : ''}</div>`).join('')}</div>` : `<p class="hint d-tip">One CV is enough to start. Make a copy with <b>+ New CV</b> when you tailor one for a specific job.</p>`}
+        </section>
+        <section class="panel d-pipe">
+          <div class="d-sec-top"><h2>Applications</h2>${apps.length ? `<button class="btn btn-sm" data-tab="tracker">Open board</button>` : ''}</div>
+          <div class="d-stages" role="group" aria-label="Applications by stage">${['Saved', 'Applied', 'Interview', 'Offer'].map(st => `<div class="d-stage st-${st}"><b>${count(st)}</b><span>${st}</span></div>`).join('')}</div>
+          ${goal ? `<div class="trk-goal"><span>This week: <b>${thisWeek} of ${goal}</b> sent</span><div class="bar"><i style="width:${Math.min(100, thisWeek / goal * 100)}%"></i></div></div>` : ''}
+          <div class="apps live">${live.length ? live.slice(0, 5).map(a => `
+            <div class="app-row live-row">
+              <button class="trk-main" data-action="app-goto" data-aid="${a.aid}"><b>${esc(a.role)}</b><span>${esc(a.company)}${a.date ? ' · ' + new Date(a.date + 'T00:00').toLocaleDateString() : ''}</span>${a.followUp && a.followUp <= today && a.status !== 'Saved' ? '<em>Follow up due</em>' : ''}</button>
+              <select class="st-sel st-${a.status}" data-app="${a.aid}" data-field="status" aria-label="Stage">${UCV.STATUSES.map(st => `<option ${st === a.status ? 'selected' : ''}>${st}</option>`).join('')}</select>
+            </div>`).join('') : '<p class="empty">Nothing live yet. Add the first job you are going for and track it from here.</p>'}</div>
+          <p class="d-foot">${sent} sent · ${count('Interview')} interviews · ${count('Offer')} offers · average CV score ${avg}</p>
+        </section>
+      </div>`;
   }
   function renderProfile() {
     const r = res(), b = r.cv.basics, m = store.master, mb = m.basics, pf = store.prefs || {};
@@ -482,7 +500,6 @@
           <h2>${esc(b.name || 'Your profile')}</h2>
           <p class="sub">${esc(b.label || 'Add your professional title under About you.')}</p>
           <div class="row" style="margin-top:.9rem"><button class="btn btn-sm btn-primary" data-action="open-version" data-vid="${active().vid}">Open my CV</button></div>
-          <div class="soon-note"><b>Coming soon: your Universal CV ID</b><span>One permanent ID that links every version of your CV and every application. <a href="blog/universal-cv-id.html">Read more</a></span></div>
         </section>
         <section class="panel">
           <h2>Profile strength</h2>
@@ -515,11 +532,15 @@
         </div>
         <p class="hint" style="margin-top:.7rem">Set a weekly number and the Applications tab shows your progress against it.</p>
       </section>
-      <section class="panel">
-        <h2>Credentials <span class="tag tag-soon" style="margin-left:.4rem;vertical-align:middle">Coming soon</span></h2>
-        <p class="sub" style="margin:0">Backing for your education, employment, certifications and professional registrations. Nothing here is live yet.</p>
-      </section>
       ${importPanel()}
+      <section class="panel d-soon">
+        <div class="d-sec-top"><h2>Coming soon</h2></div>
+        <div class="d-soon-grid">
+          <div><b>Your Universal CV ID</b><span>One permanent ID that links every version of your CV and every application. <a href="blog/universal-cv-id.html">Read more</a></span></div>
+          <div><b>Credentials</b><span>Backing for your education, employment, certifications and professional registrations.</span></div>
+          <div><b>Save to a folder or Google Drive</b><span>Keep your CVs somewhere you already look.</span></div>
+        </div>
+      </section>
       <p class="hint"><a href="privacy.html">How your data is handled</a></p>`;
   }
   function nextBar() {
@@ -870,7 +891,7 @@
       </section>`;
   }
 
-  let appFilter = 'All', appOpen = null, appAdding = false;
+  let appFilter = 'All', appOpen = null, appAdding = false, trkView = 'board';
   // After a download or a copied link, offer to log the application (once per CV per visit).
   const logAsked = new Set();
   function offerLog() {
@@ -885,6 +906,16 @@
       <button class="btn btn-primary" type="submit">Log application</button><button class="btn" type="button" data-action="log-dismiss">Not now</button></div></form>`;
     el.hidden = false;
   }
+  const trkDetail = a => `<div class="trk-detail">
+            <div class="grid-3">
+              <label class="field">Location<input type="text" data-app="${a.aid}" data-field="location" value="${esc(a.location || '')}" placeholder="City or remote"></label>
+              <label class="field">Salary<input type="text" data-app="${a.aid}" data-field="salary" value="${esc(a.salary || '')}" placeholder="As advertised"></label>
+              <label class="field">Contact<input type="text" data-app="${a.aid}" data-field="contact" value="${esc(a.contact || '')}" placeholder="Recruiter name or email"></label>
+            </div>
+            <label class="field">Job link<div class="linkbox"><input type="url" data-app="${a.aid}" data-field="url" value="${esc(a.url || '')}" placeholder="https://">${UCV.safeUrl(a.url) ? `<a class="btn" href="${esc(UCV.safeUrl(a.url))}" target="_blank" rel="noopener noreferrer">Open</a>` : ''}</div></label>
+            <label class="field">Notes<textarea rows="3" data-app="${a.aid}" data-field="notes" placeholder="Interview dates, who you spoke to, what to follow up on">${esc(a.notes || '')}</textarea></label>
+            <div class="row"><button class="btn btn-sm" data-action="open-version" data-vid="${esc(a.vid)}">Open the CV sent</button><span class="spacer"></span><button class="btn btn-sm btn-danger" data-action="del-app" data-aid="${a.aid}">Delete</button></div>
+          </div>`;
   function renderTracker() {
     const all = store.applications, today = new Date().toISOString().slice(0, 10);
     const count = st => st === 'All' ? all.length : all.filter(a => a.status === st).length;
@@ -899,9 +930,10 @@
       <section class="panel">
         <div class="trk-top">
           <div><h2>Applications</h2><p class="sub" style="margin:0">Every job you are going for, which CV you sent, and what happens next.</p></div>
+          <div class="seg" role="group" aria-label="View"><button data-action="trk-view" data-v="board" aria-pressed="${trkView === 'board'}">Board</button><button data-action="trk-view" data-v="list" aria-pressed="${trkView === 'list'}">List</button></div>
           <button class="btn btn-primary" data-action="app-add">${appAdding ? 'Close' : '+ Add application'}</button>
         </div>
-        <div class="trk-filters" role="group" aria-label="Filter by stage">${['All', ...UCV.STATUSES].map(st => `<button class="trk-f f-${st}" data-action="app-filter" data-st="${st}" aria-pressed="${appFilter === st}"><b>${count(st)}</b><span>${st}</span></button>`).join('')}</div>
+        <div class="trk-filters" role="group" aria-label="Filter by stage"${trkView === 'board' ? ' hidden' : ''}>${['All', ...UCV.STATUSES].map(st => `<button class="trk-f f-${st}" data-action="app-filter" data-st="${st}" aria-pressed="${appFilter === st}"><b>${count(st)}</b><span>${st}</span></button>`).join('')}</div>
         ${goal || dueCount ? `<div class="trk-notes">
           ${goal ? `<div class="trk-goal"><span>This week: <b>${thisWeek} of ${goal}</b> applications sent</span><div class="bar"><i style="width:${Math.min(100, thisWeek / goal * 100)}%"></i></div></div>` : ''}
           ${dueCount ? `<span class="pill st-Interview">${dueCount} follow-up${dueCount > 1 ? 's' : ''} due</span>` : ''}</div>` : ''}
@@ -915,6 +947,16 @@
           <div class="row"><button class="btn btn-primary" type="submit">Add application</button><button class="btn" type="button" data-action="app-add">Cancel</button></div>
         </form>
       </section>` : ''}
+      ${trkView === 'board' ? `<div class="board">${UCV.STATUSES.map(st => { const col = all.filter(a => a.status === st).sort((a, b) => (b.date || '').localeCompare(a.date || '')); return `
+        <section class="b-col st-${st}" aria-label="${st}"><header><b>${st}</b><span>${col.length}</span></header>
+          ${col.length ? col.map(a => `<article class="b-card${appOpen === a.aid ? ' is-open' : ''}">
+            <button class="trk-main" data-action="app-open" data-aid="${a.aid}" aria-expanded="${appOpen === a.aid}"><b>${esc(a.role)}</b><span>${esc(a.company)}${a.location ? ' · ' + esc(a.location) : ''}</span></button>
+            ${due(a) ? '<em class="b-due">Follow up due</em>' : ''}
+            <div class="b-meta"><span>${esc((store.versions.find(x => x.vid === a.vid) || {}).name || 'CV removed')}</span>${a.date ? `<span>${new Date(a.date + 'T00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>` : ''}</div>
+            <select class="st-sel st-${a.status}" data-app="${a.aid}" data-field="status" aria-label="Move to stage">${UCV.STATUSES.map(x => `<option ${x === a.status ? 'selected' : ''}>${x}</option>`).join('')}</select>
+            ${appOpen === a.aid ? trkDetail(a) : ''}
+          </article>`).join('') : '<p class="b-empty">None</p>'}</section>`; }).join('')}</div>
+      ${all.length ? '' : '<section class="panel"><p class="empty">No applications yet. Add one here, or use “Add to tracker” in a CV’s Job match step.</p></section>'}` : `
       <section class="panel trk">
         ${apps.length ? `<div class="trk-row trk-headrow" aria-hidden="true"><span>Role</span><span>CV sent</span><span>Stage</span><span>Applied</span><span>Follow up</span><span>Interest</span><span></span></div>` : ''}
         <div class="apps">${apps.length ? apps.map(a => `
@@ -928,18 +970,9 @@
             <span class="stars" role="group" aria-label="Interest, ${+a.excitement || 0} of 5">${[1, 2, 3, 4, 5].map(n => `<button data-action="app-star" data-aid="${a.aid}" data-n="${n}" class="${n <= (+a.excitement || 0) ? 'on' : ''}" aria-label="${n} of 5">★</button>`).join('')}</span>
             <button class="icon-btn" data-action="app-open" data-aid="${a.aid}" aria-label="${appOpen === a.aid ? 'Hide' : 'Show'} details">${appOpen === a.aid ? '–' : '+'}</button>
           </div>
-          ${appOpen === a.aid ? `<div class="trk-detail">
-            <div class="grid-3">
-              <label class="field">Location<input type="text" data-app="${a.aid}" data-field="location" value="${esc(a.location || '')}" placeholder="City or remote"></label>
-              <label class="field">Salary<input type="text" data-app="${a.aid}" data-field="salary" value="${esc(a.salary || '')}" placeholder="As advertised"></label>
-              <label class="field">Contact<input type="text" data-app="${a.aid}" data-field="contact" value="${esc(a.contact || '')}" placeholder="Recruiter name or email"></label>
-            </div>
-            <label class="field">Job link<div class="linkbox"><input type="url" data-app="${a.aid}" data-field="url" value="${esc(a.url || '')}" placeholder="https://">${UCV.safeUrl(a.url) ? `<a class="btn" href="${esc(UCV.safeUrl(a.url))}" target="_blank" rel="noopener noreferrer">Open</a>` : ''}</div></label>
-            <label class="field">Notes<textarea rows="3" data-app="${a.aid}" data-field="notes" placeholder="Interview dates, who you spoke to, what to follow up on">${esc(a.notes || '')}</textarea></label>
-            <div class="row"><button class="btn btn-sm" data-action="open-version" data-vid="${esc(a.vid)}">Open the CV sent</button><span class="spacer"></span><button class="btn btn-sm btn-danger" data-action="del-app" data-aid="${a.aid}">Delete</button></div>
-          </div>` : ''}
+          ${appOpen === a.aid ? trkDetail(a) : ''}
         </div>`).join('') : `<p class="empty">${all.length ? 'Nothing at this stage.' : 'No applications yet. Add one here, or use “Add to tracker” in a CV’s Job match step.'}</p>`}</div>
-      </section>`;
+      </section>`}`;
   }
 
   function pendingBanner() {
@@ -1314,7 +1347,7 @@
       case 'copy-letter': copy(UCV.letterText(res(), v), 'Letter copied'); break;
       case 'docx-letter': exportDocx(true); break;
       case 'docx': exportDocx(false); break;
-      case 'open-version': store.active = btn.dataset.vid; tab = 'edit'; persist(); document.body.classList.remove('show-preview'); syncPreviewBtn(); renderAll(); window.scrollTo(0, 0); try { history.replaceState(null, '', '#edit'); } catch (_) {} break;
+      case 'open-version': store.active = btn.dataset.vid; tab = btn.dataset.to || 'edit'; persist(); document.body.classList.remove('show-preview'); syncPreviewBtn(); renderAll(); window.scrollTo(0, 0); try { history.replaceState(null, '', '#' + tab); } catch (_) {} break;
       case 'dup-version': case 'new-version': {
         const src = a === 'new-version' ? v : store.versions.find(x => x.vid === btn.dataset.vid);
         const nv = UCV.clone(src); nv.vid = UCV.uid('v'); nv.updatedAt = new Date().toISOString();
@@ -1344,8 +1377,9 @@
       case 'copy-json': copy(JSON.stringify(UCV.toJSONResume(store, res()), null, 2), 'JSON copied'); break;
       case 'app-add': appAdding = !appAdding; renderPanel(); if (appAdding) { const f = $('#a-role'); if (f) f.focus(); } break;
       case 'app-add-go': appAdding = true; appFilter = 'All'; tab = 'tracker'; renderAll(); window.scrollTo(0, 0); { const f = $('#a-role'); if (f) f.focus(); } break;
-      case 'app-goto': appOpen = btn.dataset.aid; appFilter = 'All'; appAdding = false; tab = 'tracker'; renderAll(); { const r = $('.app-row.is-open'); if (r) r.scrollIntoView({ block: 'center' }); } break;
+      case 'app-goto': appOpen = btn.dataset.aid; appFilter = 'All'; appAdding = false; tab = 'tracker'; renderAll(); { const r = $('.app-row.is-open, .b-card.is-open'); if (r) r.scrollIntoView({ block: 'center' }); } break;
       case 'log-dismiss': { const lp = $('#logPrompt'); if (lp) lp.hidden = true; break; }
+      case 'trk-view': trkView = btn.dataset.v; appOpen = null; renderPanel(); break;
       case 'app-filter': appFilter = btn.dataset.st; renderPanel(); break;
       case 'app-open': appOpen = appOpen === btn.dataset.aid ? null : btn.dataset.aid; renderPanel(); break;
       case 'app-star': { const ap = store.applications.find(x => x.aid === btn.dataset.aid); ap.excitement = +ap.excitement === +btn.dataset.n ? 0 : +btn.dataset.n; UCV.save(store); renderPanel(); break; }
