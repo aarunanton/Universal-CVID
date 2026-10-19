@@ -94,3 +94,10 @@ MIT © Aarun Antony
 
 ## Find jobs: widget mode (v38)
 Careerjet's API refused our Worker (403, "Unauthorized access from IP", Cloudflare IPs are shared and change), so Find jobs now embeds Careerjet's search box (`SEARCH_MODE = 'widget'` in assets/pages.js). To go back to our own search + fit scores, get a fixed IP approved by Careerjet, point the Worker at it, and set `SEARCH_MODE = 'api'`. CSP in assets/boot.js allows careerjet hosts; tighten it once the widget's real requests are known (check the browser console).
+
+## v39
+- Find jobs is now two steps (like Teal): 1) search (Careerjet box), 2) "Add the job here" (link + advert, title/company guessed) with fit score, save to tracker with the full description, tailor a CV copy, and start a cover letter from it.
+- "Save to CV ID" bookmarklet (desktop): sends the job page's link, title and text to the app via postMessage. Everything received is clipped and shown in the form for the person to check. Nothing goes to a server.
+- Find jobs is second in the menu and has a yellow search card on the dashboard.
+- Cover letters: input and preview are 50/50 on desktop; on phones a Write/Preview switch.
+- Phones: bottom tab bar (Home, Find jobs, Tracker, Resumes, More), compact top bar, shorter pages (long helper text hidden), 44px tap targets, 16px fields.

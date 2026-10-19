@@ -34,7 +34,9 @@
     resources: '<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M8 8h6M8 12h6"/>',
     profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
   };
-  const NAV = [['home', 'Dashboard'], ['resumes', 'Resumes'], ['tracker', 'Job tracker'], ['find', 'Find jobs'], ['cover', 'Cover letters'], ['contacts', 'Contacts'], ['interviews', 'Interviews'], ['resources', 'Resources']];
+  const NAV = [['home', 'Dashboard'], ['find', 'Find jobs'], ['tracker', 'Job tracker'], ['resumes', 'Resumes'], ['cover', 'Cover letters'], ['contacts', 'Contacts'], ['interviews', 'Interviews'], ['resources', 'Resources']];
+  const BAR = [['home', 'Home'], ['find', 'Find jobs'], ['tracker', 'Tracker'], ['resumes', 'Resumes']]; // phone bottom bar; the rest sit under More
+  const MORE = ['cover', 'contacts', 'interviews', 'resources', 'profile'];
   const PAGES = NAV.map(n => n[0]).concat('profile');
 
   const QUESTIONS = [
@@ -67,6 +69,9 @@
       return `
         <a class="sd-brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span><span>Universal CV ID</span></a>
         <nav class="sd-nav" aria-label="App">${NAV.map(([id, l]) => link(id, l)).join('')}</nav>
+        <a class="sd-me" href="#profile" data-tab="profile" aria-label="Profile and settings"><svg viewBox="0 0 24 24" aria-hidden="true">${IC.profile}</svg></a>
+        <nav class="bt" aria-label="Main">${BAR.map(([id, l]) => `<a href="#${id}" class="bt-i${id === 'find' ? ' bt-find' : ''}" data-tab="${id}"${tab === id || (id === 'resumes' && tab === 'versions') ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${IC[id]}</svg><span>${l}</span>${badge(id)}</a>`).join('')}<button type="button" class="bt-i bt-more-btn" data-action="pg-more" aria-expanded="false"${MORE.includes(tab) ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/></svg><span>More</span></button></nav>
+        <div class="bt-more" role="menu" aria-label="More">${MORE.map(id => id === 'profile' ? `<a href="#profile" data-tab="profile" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">${IC.profile}</svg>Profile and settings</a>` : `<a href="#${id}" data-tab="${id}" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true">${IC[id]}</svg>${(NAV.find(n => n[0] === id) || [])[1]}</a>`).join('')}<a href="https://tally.so/r/1A11el" target="_blank" rel="noopener" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Give feedback</a></div>
         <div class="sd-foot">
           <div class="sd-note"><b>Kept in this browser</b><span>Your CV, tracker and notes are saved on this device. Only Find jobs searches leave it, and they carry what you typed, not your CV.</span></div>
           ${link('profile', 'Profile and settings')}
@@ -97,8 +102,9 @@
       return `
         <header class="pg-head">
           <div><p class="pg-date">${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1>${hello}${first ? ', ' + esc(first) : ''}</h1></div>
-          <div class="pg-actions"><button class="btn btn-primary" data-action="app-add-go">+ Add a job</button><button class="btn" data-tab="find">Find jobs</button></div>
+          <div class="pg-actions"><button class="btn btn-primary" data-tab="find">Find jobs</button><button class="btn" data-action="pg-add-go">+ Add a job</button></div>
         </header>
+        <section class="pg-hero" aria-label="Find jobs"><div><h2>Find your next job</h2><p>${pf.roles || pf.locations ? 'Looking for ' + esc((pf.roles || 'work').split(/[,;\n]/)[0].trim()) + (pf.locations ? ' in ' + esc(pf.locations.split(/[,;\n]/)[0].trim()) : '') + '. ' : ''}Search Ireland and UK listings, add the one you like, and see how your CV fits it.</p></div><div class="pg-hero-b"><button class="btn btn-primary" data-tab="find">Search jobs</button><button class="btn" data-action="pg-add-go">Add a job I found</button></div></section>
         <section class="pg-next"><span class="pg-next-ic" aria-hidden="true">→</span><div><b>${esc(nx.t)}</b><span>${esc(nx.d)}</span></div><button class="btn btn-primary" ${nx.a}>${esc(nx.b)}</button></section>
         <div class="pg-stats" role="group" aria-label="Your job search">
           ${['Saved', 'Applied', 'Interview', 'Offer'].map(st => `<button class="pg-stat st-${st}" data-tab="tracker"><b>${count(st)}</b><span>${st}</span></button>`).join('')}
@@ -152,7 +158,7 @@
     }
 
     // ---------- find jobs ----------
-    const F = { what: null, where: null, country: 'ie', sort: 'match', status: 'idle', jobs: [], sel: '', err: '', sources: [], paste: { open: false, role: '', company: '', text: '', sel: false } };
+    const F = { what: null, where: null, country: 'ie', sort: 'match', status: 'idle', jobs: [], sel: '', err: '', sources: [], paste: { open: true, url: '', role: '', company: '', text: '', sel: false }, gotId: '' };
     const isFindTab = () => ctx.tab() === 'find';
     function findDefaults() {
       const pf = ctx.store().prefs || {};
@@ -165,29 +171,55 @@
       j._m = mt || null;
       return j._m;
     }
-    function launcher() {
+    function boardLinks() {
       const q = encodeURIComponent((F.what || '').trim()), l = encodeURIComponent((F.where || '').trim());
       const ie = F.country === 'ie';
       const links = [
         [ie ? 'Indeed Ireland' : 'Indeed UK', `https://${ie ? 'ie' : 'uk'}.indeed.com/jobs?q=${q}&l=${l}`],
         ['LinkedIn', `https://www.linkedin.com/jobs/search/?keywords=${q}&location=${l}`],
-        ['Careerjet', `https://www.careerjet.${ie ? 'ie' : 'co.uk'}/search/jobs?s=${q}&l=${l}`],
         ['Jooble', `https://${ie ? 'ie' : 'uk'}.jooble.org/SearchResult?ukw=${q}&rgns=${l}`],
         ['Google jobs', `https://www.google.com/search?q=${encodeURIComponent(((F.what || '') + ' jobs ' + (F.where || '')).trim())}&ibp=htl;jobs`]
       ].concat(ie ? [['Jobs Ireland', 'https://jobsireland.ie/'], ['Public jobs', 'https://www.publicjobs.ie/']] : []);
+      return `<div class="pg-chips">${links.map(([n, u]) => `<a class="pg-chip" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(n)} ↗</a>`).join('')}</div>`;
+    }
+    function launcher() {
       return `<section class="pg-card" aria-labelledby="lnT"><div class="pg-card-top"><h2 id="lnT">Search other job boards</h2><span>Opens in a new tab</span></div>
-        <p class="pg-sub" style="margin:0 0 12px">Found a good one? Paste it below to see how it fits your CV, then save it to your tracker.</p>
-        <div class="pg-chips">${links.map(([n, u]) => `<a class="pg-chip" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(n)} ↗</a>`).join('')}</div></section>`;
+        <p class="pg-sub" style="margin:0 0 12px">Found a good one? Paste it below to see how it fits your CV, then save it to your tracker.</p>${boardLinks()}</section>`;
+    }
+    // Guess the title and company from a page title like "Medical Secretary - Southeast Clinic | Indeed" or from the advert text.
+    function guess(text, pageTitle) {
+      let role = '', company = '';
+      const pt = String(pageTitle || '').split(/\s+[|\-–—·]\s+/).map(x => x.trim()).filter(Boolean);
+      if (pt.length >= 2) { role = pt[0]; company = pt[1]; }
+      const lines = String(text || '').split(/\n/).map(x => x.trim()).filter(Boolean);
+      if (!role && lines[0] && lines[0].length <= 90) role = lines[0];
+      const m = String(text || '').slice(0, 1500).match(/(?:company|employer|organisation|organization)\s*[:\-]\s*([^\n]{2,60})/i) || (lines.slice(0, 4).join(' ').match(/\bat ([A-Z][\w&.' -]{2,40}?)(?:[,.\n]| in | - |$)/));
+      if (m && (!company || /indeed|linkedin|jooble|careerjet|glassdoor|jobs/i.test(company))) company = m[1].trim();
+      if (/indeed|linkedin|jooble|careerjet|glassdoor|jobs ireland/i.test(company)) company = '';
+      return { role: cap(role, 140), company: cap(company, 100) };
+    }
+    // One-line bookmarklet: sends the job page's title, link and text to this app (opened from the page's own button).
+    function bookmarklet() {
+      const here = location.origin + location.pathname.replace(/[^/]*$/, '') + 'app.html';
+      const js = "(function(){var s=String(getSelection()||'').trim(),q=['[class*=job-desc]','[class*=description]','[id*=description]','article','main'],t=s,i,e;if(t.length<200){for(i=0;i<q.length;i++){e=document.querySelector(q[i]);if(e&&e.innerText.length>t.length&&e.innerText.length>200){t=e.innerText;break}}}if(t.length<200)t=document.body.innerText;var h=document.querySelector('h1'),d={type:'ucvid-job',id:String(Date.now()),title:(h?h.innerText:document.title).trim().slice(0,160),page:document.title.slice(0,200),url:location.href.slice(0,1000),text:t.trim().slice(0,20000)};var w=window.open('" + here + "#add','ucvid'),n=0,f=function(v){if(v.source===w&&v.data==='ucvid-got'){clearInterval(r);window.removeEventListener('message',f)}},r=setInterval(function(){try{w.postMessage(d,'" + location.origin + "')}catch(x){}if(++n>25)clearInterval(r)},400);window.addEventListener('message',f)})()";
+      return 'javascript:' + js;
+    }
+    function bookmarkCard() {
+      return `<section class="pg-card pg-bm only-desk" aria-labelledby="bmT"><div class="pg-card-top"><h2 id="bmT">Skip the copying</h2><span>On a computer</span></div>
+        <p class="pg-sub" style="margin:0 0 14px">Drag this button to your bookmarks bar. On any job page, click it. The job, its link and the full advert arrive here, ready to check.</p>
+        <div class="row"><a class="btn btn-primary pg-bm-btn" data-action="pg-bm" draggable="true" href="${esc(bookmarklet())}">Save to CV ID</a><span class="hint">Drag it up, do not click it here. Works on most job sites. The page text goes to this app only.</span></div></section>`;
     }
     function pastePanel() {
       const P = F.paste;
-      return `<section class="pg-card" aria-labelledby="psT">
-        <div class="pg-card-top"><h2 id="psT">Paste a job advert</h2><button class="btn btn-sm btn-ghost" data-action="pg-paste-toggle" aria-expanded="${P.open}">${P.open ? 'Hide' : 'Open'}</button></div>
-        ${P.open ? `<div class="stack">
+      return `<section class="pg-card pg-add" id="pgAdd" aria-labelledby="psT">
+        <div class="pg-card-top"><h2 id="psT"><span class="pg-stepn" aria-hidden="true">2</span>Add the job here</h2></div>
+        <p class="pg-sub" style="margin:0 0 14px">Found one you like? Paste its link and the advert. It goes into your tracker with the full description, and we show how your CV fits. Nothing leaves your browser.</p>
+        <div class="stack">
+          <label class="field">Job link<input type="url" data-pg="paste-url" value="${esc(P.url)}" placeholder="https://" autocomplete="off"></label>
           <div class="grid-2"><label class="field">Job title<input type="text" data-pg="paste-role" value="${esc(P.role)}" placeholder="e.g. Medical Secretary"></label><label class="field">Company<input type="text" data-pg="paste-company" value="${esc(P.company)}" placeholder="e.g. Southeast Clinic"></label></div>
-          <label class="field">The advert text<textarea rows="6" data-pg="paste-text" placeholder="Paste the whole advert here. It is read in your browser.">${esc(P.text)}</textarea></label>
+          <label class="field">The advert<textarea rows="7" data-pg="paste-text" placeholder="Paste the whole advert here.">${esc(P.text)}</textarea></label>
           <div class="row"><button class="btn btn-primary" data-action="pg-paste-check">See how it fits my CV</button></div>
-        </div>` : '<p class="pg-sub" style="margin:0">Works for any advert from anywhere. Nothing is sent anywhere.</p>'}
+        </div>
       </section>`;
     }
     function jobList() {
@@ -203,10 +235,11 @@
           <span class="pg-job-f">${j.date ? esc(dateFmt(j.date)) + ' · ' : ''}via ${esc(j.source || 'job board')}</span></button>`;
       }).join('');
     }
+    function findSaved(j) { return ctx.store().applications.find(a => (j.url && a.url === j.url) || (!j.url && a.role === j.title && (a.company || '') === (j.company || '') && a.jd && a.jd === cap(j.snippet, 20000))); }
     function jobDetail() {
       const j = F.jobs.find(x => x.id === F.sel) || (F.paste.sel && F.paste.job);
       if (!j) return '<div class="pg-card pg-detail-empty"><p class="pg-sub" style="margin:0">Pick a job on the left to see how it fits your CV.</p></div>';
-      const m = scoreJob(j), saved = !!ctx.store().applications.find(a => a.url && a.url === j.url);
+      const m = scoreJob(j), saved = !!findSaved(j);
       const chips = (arr, cls) => arr.length ? `<div class="pg-kw">${arr.slice(0, 14).map(k => `<span class="${cls}">${esc(k)}</span>`).join('')}</div>` : '';
       return `<article class="pg-card pg-detail">
         <h2>${esc(j.title)}</h2>
@@ -220,6 +253,7 @@
           <button class="btn" data-action="pg-job-save"${saved ? ' disabled' : ''}>${saved ? 'In your tracker' : 'Save to tracker'}</button>
           ${j.url ? `<a class="btn${F.paste.sel ? '' : ' btn-primary'}" href="${esc(ctx.safeUrl(j.url))}" target="_blank" rel="noopener sponsored">${F.paste.sel ? 'Open the advert' : 'Apply on ' + esc(j.source || 'the job site')} ↗</a>` : ''}
           <button class="btn" data-action="pg-job-tailor">Tailor a copy of my CV</button>
+          <button class="btn" data-action="pg-job-letter">Write a cover letter</button>
         </div></article>`;
     }
     function find() {
@@ -238,18 +272,22 @@
           <section aria-label="Job details">${jobDetail()}</section></div>`;
       if (F.paste.sel && st !== 'done') results += `<div class="pg-split pg-one">${jobDetail()}</div>`;
       return `
-        <header class="pg-head"><div><h1>Find jobs</h1><p class="pg-sub">Search, see how well each job fits your CV, and save the good ones.</p></div></header>
-        ${SEARCH_MODE === 'widget' ? `<section class="pg-card pg-cj" aria-label="Job search"><div id="cjSlot"></div>
-          <p class="hint" style="margin-top:12px">This search is run by Careerjet. What you type goes to Careerjet, not to us, and they never see your CV. We may earn a small fee when you apply through them. It costs you nothing.</p>
-          <p class="hint">Found one you like? Paste the advert below to see how it fits your CV, then save it to your tracker.</p></section>` : `<form class="pg-search" id="pgFindForm" role="search">
+        <header class="pg-head"><div><h1>Find jobs</h1><p class="pg-sub">Search, add the job you like, and see how your CV fits.</p></div></header>
+        ${SEARCH_MODE === 'widget' ? `<section class="pg-card pg-cj" aria-labelledby="s1T"><div class="pg-card-top"><h2 id="s1T"><span class="pg-stepn" aria-hidden="true">1</span>Search for jobs</h2><span>by Careerjet</span></div>
+          <div id="cjSlot"></div>
+          <details class="pg-more"><summary>Search other job boards</summary>${boardLinks()}</details>
+          <p class="hint" style="margin-top:12px">What you type here goes to Careerjet, not to us. We may earn a small fee when you apply through them. It costs you nothing.</p></section>
+        ${pastePanel()}
+        ${results}
+        ${bookmarkCard()}` : `<form class="pg-search" id="pgFindForm" role="search">
           <label class="pg-sf"><span>Job title or skill</span><input type="text" name="what" data-pg="find-what" value="${esc(F.what)}" placeholder="e.g. medical secretary" maxlength="80" autocomplete="off"></label>
           <label class="pg-sf"><span>Place</span><input type="text" name="where" data-pg="find-where" value="${esc(F.where)}" placeholder="e.g. Waterford" maxlength="80" autocomplete="off"></label>
           <label class="pg-sf pg-sf-s"><span>Country</span><select name="country" data-pg="find-country"><option value="ie"${F.country === 'ie' ? ' selected' : ''}>Ireland</option><option value="gb"${F.country === 'gb' ? ' selected' : ''}>UK</option></select></label>
           <button class="btn btn-primary" type="submit">Search</button>
         </form>
-        <p class="hint pg-priv">Searches go through our server to the job sites, so they see what you typed and your IP address. They never see your CV.</p>`}
+        <p class="hint pg-priv">Searches go through our server to the job sites, so they see what you typed and your IP address. They never see your CV.</p>
         ${results}
-        <div class="pg-cols">${pastePanel()}${launcher()}</div>`;
+        <div class="pg-cols">${pastePanel()}${launcher()}</div>`}`;
     }
     async function runSearch() {
       const what = (F.what || '').trim(), where = (F.where || '').trim();
@@ -269,11 +307,13 @@
       if (isFindTab()) ctx.rerender();
     }
     function currentJob() { return F.jobs.find(x => x.id === F.sel) || (F.paste.sel && F.paste.job) || null; }
-    function saveJob(j) {
-      const s = ctx.store();
-      if (j.url && s.applications.some(a => a.url === j.url)) { ctx.toast('Already in your tracker.'); return; }
-      s.applications.push({ aid: ctx.uid('a'), company: j.company || 'Company', role: j.title, vid: s.active, status: 'Saved', date: today(), url: j.url || '', notes: '', location: j.location || '', salary: j.salary || '', jd: cap(j.snippet, 20000) });
-      ctx.persist(); ctx.rerender(); ctx.toast('Saved to your tracker.');
+    function saveJob(j, quiet) {
+      const s = ctx.store(), had = findSaved(j);
+      if (had) { if (!quiet) ctx.toast('Already in your tracker.'); return had; }
+      const a = { aid: ctx.uid('a'), company: j.company || 'Company', role: j.title, vid: s.active, status: 'Saved', date: today(), url: ctx.safeUrl(j.url) || '', notes: '', location: j.location || '', salary: j.salary || '', jd: cap(j.snippet, 20000) };
+      s.applications.push(a);
+      ctx.persist(); if (!quiet) { ctx.rerender(); ctx.toast('Saved to your tracker.'); }
+      return a;
     }
     function tailor(j) {
       const s = ctx.store(), src = s.versions.find(x => x.vid === s.active) || s.versions[0];
@@ -287,7 +327,7 @@
     }
 
     // ---------- cover letters ----------
-    const C = { lid: '', adding: false };
+    const C = { lid: '', adding: false, view: 'edit' };
     function letters() { return arrIn(ctx.store(), 'coverLetters'); }
     function curLetter() { const ls = letters(); return ls.find(l => l.lid === C.lid) || ls[0] || null; }
     function defOpening(role, company) {
@@ -338,7 +378,8 @@
         <header class="pg-head"><div><p class="pg-date">Cover letters</p><h1>${esc((L.role || 'Cover letter') + (L.company ? ', ' + L.company : ''))}</h1></div>
           <div class="pg-actions"><button class="btn" data-action="pg-letter-copy">Copy text</button><button class="btn btn-primary" data-action="pg-letter-pdf">Download PDF</button></div></header>
         <div class="pg-tabs">${ls.map(chip).join('')}<button class="pg-tab pg-tab-add" data-action="pg-letter-add">+ New letter</button></div>
-        <div class="pg-cols pg-letter">
+        <div class="pg-seg only-mob" role="group" aria-label="Letter view"><button data-action="pg-lt-view" data-v="edit" aria-pressed="${C.view !== 'prev'}">Write</button><button data-action="pg-lt-view" data-v="prev" aria-pressed="${C.view === 'prev'}">Preview</button></div>
+        <div class="pg-letter v-${C.view === 'prev' ? 'prev' : 'edit'}">
           <section class="pg-card" aria-label="Write your letter">
             <div class="stack">
               <label class="field">For which job?<select data-pg="cv-job">${`<option value="">Not in my tracker</option>` + apps.map(a => `<option value="${esc(a.aid)}"${a.aid === L.aid ? ' selected' : ''}>${esc(a.role)} · ${esc(a.company)}</option>`).join('')}</select></label>
@@ -508,6 +549,20 @@
         </div>`;
     }
 
+    // ---------- jobs sent from the bookmarklet ----------
+    // The page that sends it is not trusted: everything is clipped and shown in the form for the person to check.
+    window.addEventListener('message', ev => {
+      const d = ev.data; if (!d || typeof d !== 'object' || d.type !== 'ucvid-job') return;
+      try { if (ev.source) ev.source.postMessage('ucvid-got', ev.origin); } catch (_) {}
+      if (F.gotId === String(d.id)) return; F.gotId = String(d.id);
+      const text = cap(d.text, 20000).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim();
+      const g = guess(text, d.page);
+      const P = F.paste; P.open = true; P.url = ctx.safeUrl(cap(d.url, 1000)) || ''; P.role = cap(d.title, 140).trim() || g.role; P.company = g.company; P.text = text;
+      if (P.role.length > 100 || P.role === cap(d.page, 140)) P.role = g.role || P.role;
+      if (text.length >= 60) { P.job = { id: 'paste', title: P.role || 'Job', company: P.company, location: '', snippet: cap(text, 20000), salary: '', date: '', url: P.url, source: 'your paste', _m: undefined }; P.sel = true; F.sel = ''; }
+      if (!ctx.store().isNew) { ctx.go('find'); ctx.toast('Job received. Check the details, then save it.'); }
+    });
+
     // ---------- events ----------
     function click(btn, a) {
       const s = ctx.store();
@@ -516,14 +571,19 @@
         case 'pg-job': F.sel = btn.dataset.jid; F.paste.sel = false; ctx.rerender(); { const d = document.querySelector('.pg-detail'); if (d && matchMedia('(max-width: 900px)').matches) d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } break;
         case 'pg-job-save': { const j = currentJob(); if (j) saveJob(j); break; }
         case 'pg-job-tailor': { const j = currentJob(); if (j) tailor(j); break; }
-        case 'pg-paste-toggle': F.paste.open = !F.paste.open; ctx.rerender(); break;
+        case 'pg-more': { const on = document.body.classList.toggle('more-open'); btn.setAttribute('aria-expanded', String(on)); break; }
+        case 'pg-bm': ctx.toast('Drag this button up to your bookmarks bar. Then click it on a job page.'); break;
+        case 'pg-add-go': F.paste.open = true; if (ctx.tab() === 'find') ctx.rerender(); else ctx.go('find'); setTimeout(() => { const e = document.getElementById('pgAdd'); if (e) { e.scrollIntoView({ block: 'start' }); const u = e.querySelector('[data-pg="paste-url"]'); if (u && !matchMedia('(pointer: coarse)').matches) u.focus(); } }, 60); break;
+        case 'pg-job-letter': { const j = currentJob(); if (!j) break; const app = saveJob(j, true); const L = newLetter(app); ctx.persist(); ctx.go('cover'); ctx.toast('Cover letter started. Check each part, then copy or download it.'); break; }
         case 'pg-paste-check': {
           const P = F.paste;
           if ((P.text || '').trim().length < 60) { ctx.toast('Paste the advert text first.', true); return; }
-          P.job = { id: 'paste', title: (P.role || '').trim() || 'Pasted advert', company: (P.company || '').trim(), location: '', snippet: cap(P.text.trim(), 20000), salary: '', date: '', url: '', source: 'your paste' };
+          if (!(P.role || '').trim() || !(P.company || '').trim()) { const g = guess(P.text); if (!(P.role || '').trim()) P.role = g.role; if (!(P.company || '').trim()) P.company = g.company; }
+          P.job = { id: 'paste', title: (P.role || '').trim() || 'Pasted advert', company: (P.company || '').trim(), location: '', snippet: cap(P.text.trim(), 20000), salary: '', date: '', url: ctx.safeUrl(P.url) || '', source: 'your paste', _m: undefined };
           P.sel = true; F.sel = ''; ctx.rerender(); { const d = document.querySelector('.pg-detail'); if (d) d.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
           break;
         }
+        case 'pg-lt-view': C.view = btn.dataset.v; ctx.rerender(); window.scrollTo(0, 0); break;
         case 'pg-letter': C.lid = btn.dataset.lid; C.adding = false; ctx.rerender(); break;
         case 'pg-letter-add': C.adding = true; ctx.rerender(); break;
         case 'pg-letter-cancel': C.adding = false; ctx.rerender(); break;
@@ -563,6 +623,7 @@
         case 'find-what': F.what = t.value; break;
         case 'find-where': F.where = t.value; break;
         case 'find-country': F.country = t.value; break;
+        case 'paste-url': F.paste.url = cap(t.value, 1000); break;
         case 'paste-role': F.paste.role = t.value; break;
         case 'paste-company': F.paste.company = t.value; break;
         case 'paste-text': F.paste.text = t.value; break;
@@ -612,6 +673,7 @@
       return false;
     }
 
+    document.addEventListener('click', e => { if (document.body.classList.contains('more-open') && !e.target.closest('.bt-more-btn')) document.body.classList.remove('more-open'); });
     return { NAV, PAGES, side, render: { home, resumes, find, cover, contacts: contactsPage, interviews: interviewsPage, resources }, click, field, submit, after: tab => { if (tab === 'find' && SEARCH_MODE === 'widget') mountWidget(); } };
   };
 })();

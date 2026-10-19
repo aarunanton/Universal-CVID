@@ -27,19 +27,6 @@ body.mode-dash .panel-col { max-width: 1080px; width: 100%; gap: 20px; }
 .sd-note b { display: block; font-size: 14px; }
 .sd-note span { display: block; font-size: 13px; line-height: 1.45; color: #B5B2AE; margin-top: 2px; }
 
-@media (max-width: 900px) {
-  body.mode-dash .side { position: sticky; top: 0; inset: auto; width: auto; flex-direction: row; align-items: center; gap: 8px; padding: 8px 12px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
-  body.mode-dash .side::-webkit-scrollbar { display: none; }
-  body.mode-dash .sd-brand span:not(.brand-mark) { display: none; }
-  body.mode-dash .sd-brand { padding: 0 4px; }
-  .sd-nav { flex-direction: row; gap: 4px; }
-  .sd-foot { margin: 0; flex-direction: row; gap: 4px; }
-  .sd-note, .sd-foot .sd-link:last-child { display: none; }
-  .sd-link { white-space: nowrap; padding: 8px 12px; }
-  .sd-link svg { display: none; }
-  body.mode-dash .workspace { margin-left: 0; padding: 20px 16px 72px; }
-}
-
 /* ---------- page parts ---------- */
 .pg-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px 24px; }
 .pg-head h1 { margin: 0; font: 700 32px/1.1 var(--display); letter-spacing: -.8px; }
@@ -270,3 +257,81 @@ body.home { background: var(--cream); }
 footer.site-foot { display: block; max-width: none; margin: 0; width: auto; border: 0; }
 .site-foot .site-foot-in, .site-foot .sf-base { width: 100%; box-sizing: border-box; }
 body.home .h-vision { padding-bottom: 56px; }
+
+
+/* ---------- v39: find jobs steps, hero, cover letter 50/50, phone layout ---------- */
+.bt, .bt-more, .sd-me, .only-mob, .pg-seg.only-mob { display: none; }
+.pg-stepn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-right: 10px; border-radius: 50%; background: #1A1919; color: #E4F222; font: 700 14px/1 var(--display); vertical-align: 2px; }
+.pg-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px 28px; flex-wrap: wrap; background: #E4F222; color: #1A1919; border-radius: 16px; padding: 24px 28px; }
+.pg-hero > div:first-child { flex: 1 1 320px; min-width: 0; }
+.pg-hero h2, .pg-hero p { color: #1A1919; }
+.pg-hero h2 { margin: 0 0 4px; font: 700 24px/1.2 var(--display); letter-spacing: -.4px; }
+.pg-hero p { margin: 0; font-size: 16px; line-height: 1.45; }
+.pg-hero-b { display: flex; gap: 10px; flex-wrap: wrap; }
+.pg-hero .btn { border-color: #1A1919; background: transparent; color: #1A1919; }
+.pg-hero .btn-primary { background: #1A1919; color: #fff; }
+.pg-more { margin-top: 14px; }
+.pg-more summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 8px 0; }
+.pg-more .pg-chips { margin-top: 8px; }
+.pg-bm-btn { cursor: grab; }
+.pg-add .field textarea { min-height: 150px; }
+.pg-seg { width: fit-content; display: inline-flex; padding: 3px; border-radius: 999px; background: #E6E3DF; gap: 2px; align-self: flex-start; }
+.pg-seg button { border: 0; background: transparent; border-radius: 999px; padding: 10px 22px; min-height: 44px; font: 600 15px/1 var(--body); color: #1A1919; cursor: pointer; }
+.pg-seg button[aria-pressed="true"] { background: #1A1919; color: #fff; }
+
+/* cover letter: input and preview each take half */
+.pg-letter { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.pg-letter > * { min-width: 0; }
+.pg-letter .pg-paper-wrap { position: sticky; top: 20px; padding: 20px; }
+.pg-letter .pg-paper { padding: clamp(24px, 3.2vw, 44px); }
+
+@media (max-width: 900px) {
+  .only-desk { display: none !important; }
+  .only-mob, .pg-seg.only-mob { display: inline-flex; }
+  body.mode-dash .side {
+    position: sticky; top: 0; inset: auto; width: auto; height: 56px; z-index: 30;
+    flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px 0 16px; overflow: visible;
+  }
+  body.mode-dash .sd-nav, body.mode-dash .sd-foot { display: none; }
+  .sd-brand { padding: 0; }
+  .sd-me { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; color: #CFCDCA; }
+  .sd-me svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  body.mode-dash .workspace { margin-left: 0; padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0px)); }
+  body.mode-dash .panel-col { gap: 16px; }
+  body.mode-dash .bt { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: #1A1919; padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #2A2928; }
+  .bt-i { flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; border: 0; background: transparent; color: #B5B2AE; text-decoration: none; font: 600 12px/1.1 var(--body); cursor: pointer; border-radius: 12px; }
+  .bt-i svg { box-sizing: content-box; padding: 4px 14px; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .bt-i[aria-current="page"] { color: #E4F222; }
+  .bt-find svg { border-radius: 999px; background: #E4F222; stroke: #1A1919; }
+  .bt-find[aria-current="page"] { color: #fff; }
+  .bt-i .sd-badge { position: absolute; top: 2px; left: 54%; margin: 0; padding: 0 6px; font-size: 11px; background: #E4F222; color: #1A1919; }
+  body.more-open .bt-more { display: flex; flex-direction: column; position: fixed; left: 12px; right: 12px; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); z-index: 45; background: #1A1919; border-radius: 16px; padding: 8px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+  .bt-more a { display: flex; align-items: center; gap: 12px; padding: 0 14px; min-height: 48px; color: #fff; text-decoration: none; font-size: 16px; font-weight: 500; border-radius: 10px; }
+  .bt-more a:active { background: #2A2928; }
+  .bt-more svg { width: 20px; height: 20px; fill: none; stroke: #B5B2AE; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  body.mode-dash .toast-wrap { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+  /* calmer pages on a phone: less text, bigger targets */
+  .pg-head h1 { font-size: 28px; }
+  .pg-head .pg-sub, .pg-date, .hint.pg-priv { display: none; }
+  .pg-head { gap: 10px; }
+  .pg-actions { width: 100%; }
+  .pg-actions .btn { flex: 1 1 auto; }
+  .pg-card { padding: 18px 16px; border-radius: 14px; }
+  .pg-card-top { flex-wrap: wrap; }
+  .pg-hero { padding: 20px 18px; }
+  .pg-hero h2 { font-size: 22px; }
+  .pg-hero-b .btn { flex: 1 1 100%; justify-content: center; }
+  .pg-next .btn { width: 100%; justify-content: center; }
+  .pg-res span:last-child { display: none; }
+  .pg-res { padding: 16px; }
+  .pg-split > :last-child { position: static; }
+  .pg-letter { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .pg-letter.v-edit .pg-paper-wrap, .pg-letter.v-prev > :first-child { display: none; }
+  .pg-letter .pg-paper-wrap { position: static; padding: 12px; }
+  .pg-letter .pg-paper { padding: 22px 18px; font-size: 14px; }
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 40px; }
+  input, select, textarea { font-size: 16px; } /* stops iOS zooming into fields */
+}
+@media (max-width: 900px) { .vimport { display: none; } }

@@ -1242,7 +1242,7 @@
     }
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
-    if (btn.dataset.action.indexOf('pg-') === 0) { P.click(btn, btn.dataset.action); return; }
+    if (btn.dataset.action.indexOf('pg-') === 0) { if (btn.tagName === 'A') e.preventDefault(); P.click(btn, btn.dataset.action); return; }
     const v = active(), m = store.master, a = btn.dataset.action;
     if (['print', 'docx', 'pdf', 'copy', 'export-json'].includes(a) && !(store.journey || {}).exported) { (store.journey = store.journey || {}).exported = true; persist(); }
     if (['print', 'docx', 'pdf', 'copy', 'download-main'].includes(a)) setTimeout(offerLog, 700);
@@ -1567,7 +1567,8 @@
   try { const th = localStorage.getItem('ucvid:theme'); if (th) document.documentElement.dataset.theme = th; } catch (_) {}
   const h = location.hash.replace('#', '');
   if (/[?&]example=1\b/.test(location.search) && store.isNew && store.isSample) { store.isNew = false; persist(); tab = 'home'; }
-  if (ALL_TABS.includes(h)) { tab = h; if (store.isNew && h !== 'edit') store.isNew = false; }
+  if (h === 'add') { tab = 'find'; if (store.isNew) store.isNew = false; }
+  else if (ALL_TABS.includes(h)) { tab = h; if (store.isNew && h !== 'edit') store.isNew = false; }
   else if (!store.isNew) tab = 'home';
   renderAll();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { renderPreview(); renderBar(); });
