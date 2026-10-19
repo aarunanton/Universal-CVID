@@ -7,6 +7,6 @@
   if (/claude/.test(location.hostname)) return; // the Claude preview window applies its own policy
   var m = document.createElement('meta');
   m.httpEquiv = 'Content-Security-Policy';
-  m.content = "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://cloudflareinsights.com https://jobs.cvid.app; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'";
+  m.content = "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://static.careerjet.org; style-src 'self' 'unsafe-inline' https://static.careerjet.org; img-src 'self' data: blob: https:; font-src 'self' https://static.careerjet.org; connect-src 'self' https://cloudflareinsights.com https://jobs.cvid.app https://widget.careerjet.net https://*.careerjet.net https://*.careerjet.org https://*.careerjet.com; worker-src 'self' blob:; frame-src https://widget.careerjet.net https://*.careerjet.net https://*.careerjet.org; object-src 'none'; base-uri 'self'; form-action 'none'";
   document.head.insertBefore(m, document.head.firstChild);
 })();

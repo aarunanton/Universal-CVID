@@ -9,10 +9,10 @@
 <meta name="theme-color" content="#F4F2F0">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://cvid.app/privacy.html">
-<script src="assets/boot.js?v=37"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=37">
-<link rel="stylesheet" href="assets/styles.css?v=37">
-<link rel="stylesheet" href="assets/shell.css?v=37">
+<script src="assets/boot.js?v=38"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=38">
+<link rel="stylesheet" href="assets/styles.css?v=38">
+<link rel="stylesheet" href="assets/shell.css?v=38">
 </head>
 <body>
   <div class="h-dark h-dark-nav">
@@ -42,7 +42,7 @@
         <li>Your CV is saved in your own browser, on your own device. We do not receive a copy.</li>
         <li>There are no cookies, no ad trackers and no adverts. We count visits anonymously, without cookies, and that count never includes your CV.</li>
         <li>Your CV leaves your device only when you download it or share a link yourself.</li>
-        <li>The one exception to "nothing is sent" is Find jobs. A search sends the words you typed, and your IP address, to our search server and the job sites behind it. Your CV is never part of it.</li>
+        <li>The one exception to "nothing is sent" is Find jobs. A search sends the words you typed, and your IP address, to Careerjet through their search box. Your CV is never part of it.</li>
       </ul>
     </section>
 
@@ -60,10 +60,11 @@
 
     <section class="doc-card">
       <h2>Find jobs</h2>
-      <p>The site itself is static, so job searches go through a small server of ours (a Cloudflare Worker) that holds our keys for job-listing services (currently Careerjet and Jooble). When you search, it receives the job title or skill and the place you typed, plus your IP address and browser type, which Careerjet requires with every search. It passes those on to the listing service and returns the results.</p>
+      <p>Find jobs uses a search box supplied by Careerjet, a job-listing service. When you search, what you type goes from your browser straight to Careerjet, along with your IP address and browser type, under Careerjet's own privacy terms. It does not pass through a server of ours, and we do not see or store it. Loading the box also means Careerjet's scripts run on that page.</p>
       <ul>
         <li><strong>Never sent:</strong> your CV, your name, your tracker, your contacts or your letters. The match score is worked out in your browser.</li>
-        <li><strong>Not stored by us.</strong> Results are cached for about ten minutes so repeat searches are quick. We keep no log of what people searched for.</li>
+        <li><strong>Not stored by us.</strong> We keep no log of what people searched for.</li>
+        <li><strong>Apply links earn us a small fee.</strong> The links on job results go through the job site, which pays us if you apply through them. It costs you nothing and does not change which jobs we show or how they are ranked for your CV.</li>
         <li><strong>The listing services</strong> see your search and IP address under their own privacy terms. When you open an advert you leave this site for theirs.</li>
       </ul>
       <p>You can use everything else without ever using Find jobs, and you can paste a job advert instead, which stays entirely in your browser.</p>

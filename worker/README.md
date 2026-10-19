@@ -24,7 +24,8 @@ Until it is deployed the Find jobs page shows quick links to job boards and stil
 
 - Receives only `what` and `where` (what the visitor typed) plus the visitor's IP and browser string, which Careerjet requires.
 - Never receives a CV, a name or anything from the tracker. Match scoring happens in the browser.
-- Stores nothing. Results are cached at the edge for 10 minutes.
+- Stores nothing and does not cache. Each search is live, because Careerjet credits clicks per visitor.
+- The apply link in each result is the provider's own tracked link. Never rewrite, shorten or strip it, or the click will not be credited to you.
 - Only answers requests from cvid.app (and localhost for testing).
 
 ## To confirm with a real key

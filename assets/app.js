@@ -994,6 +994,7 @@
     panel.innerHTML = pendingBanner() + html + nextBar();
     const lab = 'tab-' + tab; if (document.getElementById(lab)) panel.setAttribute('aria-labelledby', lab); else panel.removeAttribute('aria-labelledby');
     if (tab === 'share') renderQR();
+    if (P.after) P.after(tab);
     $$('textarea[data-bullet]', panel).forEach(autosize);
   }
   function renderAll() { document.body.classList.toggle('is-start', !!store.isNew); document.body.classList.toggle('mode-dash', isDash(tab)); renderPanel(); renderPreview(); renderBar(); }

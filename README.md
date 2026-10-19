@@ -91,3 +91,6 @@ MIT © Aarun Antony
 - App shell with left navigation: Dashboard, Resumes, Job tracker, Find jobs, Cover letters, Contacts, Interviews, Resources.
 - Find jobs: live search through a small Cloudflare Worker (`worker/`, see its README to deploy), a paste-an-advert match check, and quick links to job boards. Match scoring runs in the browser.
 - Cream homepage, merged closing band and footer on every public page, privacy page updated for Find jobs.
+
+## Find jobs: widget mode (v38)
+Careerjet's API refused our Worker (403, "Unauthorized access from IP", Cloudflare IPs are shared and change), so Find jobs now embeds Careerjet's search box (`SEARCH_MODE = 'widget'` in assets/pages.js). To go back to our own search + fit scores, get a fixed IP approved by Careerjet, point the Worker at it, and set `SEARCH_MODE = 'api'`. CSP in assets/boot.js allows careerjet hosts; tighten it once the widget's real requests are known (check the browser console).

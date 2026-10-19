@@ -7,6 +7,21 @@
   'use strict';
 
   const JOBS_API = 'https://jobs.cvid.app'; // see worker/README.md
+  // Find jobs mode. 'widget' = Careerjet's own search box (no server IP needed).
+  // 'api' = our own search form + the Worker (needs Careerjet to accept the Worker's IP; see worker/README.md).
+  const SEARCH_MODE = 'widget';
+  const CJ_WIDGET = 'https://widget.careerjet.net/search-box/848f77cae4562850c1555c18cfe1c06d'; // public widget id, not a secret
+  let cjHost = null; // kept between renders so results are not wiped when the page redraws
+  function mountWidget() {
+    const slot = document.getElementById('cjSlot'); if (!slot) return;
+    if (!cjHost) {
+      cjHost = document.createElement('div'); cjHost.className = 'cj-search-box'; cjHost.setAttribute('data-url', CJ_WIDGET);
+      slot.appendChild(cjHost);
+      const js = document.createElement('script'); js.id = 'cj-search-box'; js.async = true;
+      js.src = 'https://static.careerjet.org/js/all_widget_search_box_3rd_party.min.js?t=' + Date.now();
+      document.body.appendChild(js);
+    } else if (cjHost.parentNode !== slot) slot.appendChild(cjHost);
+  }
 
   const IC = {
     home: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
@@ -53,7 +68,7 @@
         <a class="sd-brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span><span>Universal CV ID</span></a>
         <nav class="sd-nav" aria-label="App">${NAV.map(([id, l]) => link(id, l)).join('')}</nav>
         <div class="sd-foot">
-          <div class="sd-note"><b>Kept in this browser</b><span>Your CV, tracker and notes are saved on this device. Only job searches go to our server, and they carry what you typed, not your CV.</span></div>
+          <div class="sd-note"><b>Kept in this browser</b><span>Your CV, tracker and notes are saved on this device. Only Find jobs searches leave it, and they carry what you typed, not your CV.</span></div>
           ${link('profile', 'Profile and settings')}
           <a class="sd-link" href="https://tally.so/r/1A11el" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Give feedback</span></a>
         </div>`;
@@ -202,8 +217,8 @@
         ${j.snippet ? `<h3>From the advert</h3><p class="pg-snip">${esc(j.snippet)}</p>` : ''}
         ${F.paste.sel ? '' : '<p class="hint">This score uses the short excerpt the job board gives us. Paste the full advert for a better read.</p>'}
         <div class="pg-btns">
-          <button class="btn btn-primary" data-action="pg-job-save"${saved ? ' disabled' : ''}>${saved ? 'In your tracker' : 'Save to tracker'}</button>
-          ${j.url ? `<a class="btn" href="${esc(ctx.safeUrl(j.url))}" target="_blank" rel="noopener noreferrer">Open the advert ↗</a>` : ''}
+          <button class="btn" data-action="pg-job-save"${saved ? ' disabled' : ''}>${saved ? 'In your tracker' : 'Save to tracker'}</button>
+          ${j.url ? `<a class="btn${F.paste.sel ? '' : ' btn-primary'}" href="${esc(ctx.safeUrl(j.url))}" target="_blank" rel="noopener sponsored">${F.paste.sel ? 'Open the advert' : 'Apply on ' + esc(j.source || 'the job site')} ↗</a>` : ''}
           <button class="btn" data-action="pg-job-tailor">Tailor a copy of my CV</button>
         </div></article>`;
     }
@@ -218,18 +233,21 @@
       else if (st === 'done') results = `<div class="pg-split"><section aria-label="Results">
           <div class="pg-resbar"><span><b>${F.jobs.length}</b> jobs · sorted by ${F.sort === 'match' ? 'best fit to your CV' : 'newest'}</span><span class="seg"><button data-action="pg-sort" data-s="match" aria-pressed="${F.sort === 'match'}">Best fit</button><button data-action="pg-sort" data-s="date" aria-pressed="${F.sort === 'date'}">Newest</button></span></div>
           <div class="pg-jobs">${jobList()}</div>
-          <p class="hint">Results come from ${esc(F.sources.join(' and ') || 'job boards')}. We pass on only what you typed and your IP address, never your CV.</p></section>
+          <p class="hint">Results come from ${esc(F.sources.join(' and ') || 'job boards')}. We pass on only what you typed and your IP address, never your CV.</p>
+          <p class="hint">Apply links go through the job site. We may earn a small fee when you apply through them. It costs you nothing and does not change which jobs we show.</p></section>
           <section aria-label="Job details">${jobDetail()}</section></div>`;
       if (F.paste.sel && st !== 'done') results += `<div class="pg-split pg-one">${jobDetail()}</div>`;
       return `
         <header class="pg-head"><div><h1>Find jobs</h1><p class="pg-sub">Search, see how well each job fits your CV, and save the good ones.</p></div></header>
-        <form class="pg-search" id="pgFindForm" role="search">
+        ${SEARCH_MODE === 'widget' ? `<section class="pg-card pg-cj" aria-label="Job search"><div id="cjSlot"></div>
+          <p class="hint" style="margin-top:12px">This search is run by Careerjet. What you type goes to Careerjet, not to us, and they never see your CV. We may earn a small fee when you apply through them. It costs you nothing.</p>
+          <p class="hint">Found one you like? Paste the advert below to see how it fits your CV, then save it to your tracker.</p></section>` : `<form class="pg-search" id="pgFindForm" role="search">
           <label class="pg-sf"><span>Job title or skill</span><input type="text" name="what" data-pg="find-what" value="${esc(F.what)}" placeholder="e.g. medical secretary" maxlength="80" autocomplete="off"></label>
           <label class="pg-sf"><span>Place</span><input type="text" name="where" data-pg="find-where" value="${esc(F.where)}" placeholder="e.g. Waterford" maxlength="80" autocomplete="off"></label>
           <label class="pg-sf pg-sf-s"><span>Country</span><select name="country" data-pg="find-country"><option value="ie"${F.country === 'ie' ? ' selected' : ''}>Ireland</option><option value="gb"${F.country === 'gb' ? ' selected' : ''}>UK</option></select></label>
           <button class="btn btn-primary" type="submit">Search</button>
         </form>
-        <p class="hint pg-priv">Searches go through our server to the job sites, so they see what you typed and your IP address. They never see your CV.</p>
+        <p class="hint pg-priv">Searches go through our server to the job sites, so they see what you typed and your IP address. They never see your CV.</p>`}
         ${results}
         <div class="pg-cols">${pastePanel()}${launcher()}</div>`;
     }
@@ -594,6 +612,6 @@
       return false;
     }
 
-    return { NAV, PAGES, side, render: { home, resumes, find, cover, contacts: contactsPage, interviews: interviewsPage, resources }, click, field, submit };
+    return { NAV, PAGES, side, render: { home, resumes, find, cover, contacts: contactsPage, interviews: interviewsPage, resources }, click, field, submit, after: tab => { if (tab === 'find' && SEARCH_MODE === 'widget') mountWidget(); } };
   };
 })();
