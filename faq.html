@@ -99,7 +99,7 @@
    "name": "Where is my CV stored?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Only in your browser. We do not receive a copy. It leaves your device only when you download it or share a link yourself."
+    "text": "Only in your browser. We do not receive a copy. It leaves your device only when you download it or share a link yourself. The one feature that talks to a server is Find jobs, and it sends only what you type in the search box, never your CV."
    }
   },
   {
@@ -145,21 +145,21 @@
  ]
 }
 </script>
-<script src="assets/boot.js?v=36"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=36">
-<link rel="stylesheet" href="assets/styles.css?v=36">
+<script src="assets/boot.js?v=37"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=37">
+<link rel="stylesheet" href="assets/styles.css?v=37">
+<link rel="stylesheet" href="assets/shell.css?v=37">
 </head>
 <body>
   <div class="h-dark h-dark-nav">
   <nav class="r-nav" aria-label="Main">
     <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID<span class="beta-tag">Beta</span></a>
     <div class="r-links">
-      <a href="cv-checker.html">CV checker</a>
       <a href="cv-builder.html">CV builder</a>
+      <a href="cv-checker.html">CV checker</a>
       <a href="faq.html" class="nav-on" aria-current="page">FAQ</a>
       <a href="blog/index.html">Blog</a>
     </div>
-    <a class="btn btn-primary r-nav-cta" href="cv-checker.html">Check my CV free</a>
   </nav>
   </div>
   <main>
@@ -179,7 +179,7 @@
     </div></div>
     <div class="faq-group"><h2>Your data</h2><div class="faq">
       <details class="faq-item"><summary><h3>Do I need to create an account?</h3></summary><p>No. There is no sign-up, email or password. Your CV is saved in your own browser on your own device.</p></details>
-      <details class="faq-item"><summary><h3>Where is my CV stored?</h3></summary><p>Only in your browser. We do not receive a copy. It leaves your device only when you download it or share a link yourself.</p></details>
+      <details class="faq-item"><summary><h3>Where is my CV stored?</h3></summary><p>Only in your browser. We do not receive a copy. It leaves your device only when you download it or share a link yourself. The one feature that talks to a server is Find jobs, and it sends only what you type in the search box, never your CV.</p></details>
     </div></div>
     <div class="faq-group"><h2>CV advice</h2><div class="faq">
       <details class="faq-item"><summary><h3>What do recruiters look for in a CV?</h3></summary><p>Most look first at your latest job title, the company and the first lines under your latest job, and they look for results rather than duties.</p></details>
@@ -190,22 +190,25 @@
     </div></div>
   </section>
   </main>
-  <section class="h-dark h-close">
-    <h2>Still have a question?</h2>
-    <p>Ask us in the 2-minute survey. It is anonymous.</p>
-    <div class="h-ctas">
-      <a class="btn btn-primary r-btn-lg" href="cv-checker.html">Check my CV free</a>
-      <a class="h-btn-ghost" href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Take the survey</a>
+  <section class="site-close" aria-labelledby="closeT">
+    <h2 id="closeT">Build it. Check it. <em>Send it.</em></h2>
+    <p>Free, no sign-up. Your CV stays on your device.</p>
+    <div class="hm-btns">
+      <a class="hm-btn dark" href="app.html">Build my CV free</a>
+      <a class="hm-btn line" href="cv-checker.html">Check my CV free</a>
     </div>
   </section>
-  <footer class="r-foot h-foot">
-    <span>Universal CV ID, open source under the MIT licence</span>
-    <span class="spacer"></span>
-    <a href="about.html">About and roadmap</a>
-    <a href="blog/index.html">Blog</a>
-    <a href="privacy.html">Data and privacy</a>
-    <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Give feedback</a>
-    <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
+  <footer class="site-foot">
+    <div class="site-foot-in">
+      <div class="sf-brand">
+        <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID</a>
+        <p>Free tools for job seekers. Your CV is read in your browser and kept on your device.</p>
+      </div>
+      <nav aria-label="Tools"><h2>Tools</h2><a href="cv-builder.html">CV builder</a><a href="cv-checker.html">CV checker</a><a href="cv-checker.html#example">Example report</a><a href="app.html#find">Find jobs</a></nav>
+      <nav aria-label="Learn"><h2>Learn</h2><a href="index.html#how">How it works</a><a href="faq.html">What we check</a><a href="blog/index.html">Blog</a><a href="faq.html">FAQ</a></nav>
+      <nav aria-label="Project"><h2>Project</h2><a href="about.html">About and roadmap</a><a href="privacy.html">Data and privacy</a><a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Give feedback</a><a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a></nav>
+    </div>
+    <div class="sf-base"><span>Open source under the MIT licence</span><span>Beta · Free for Ireland and the UK</span></div>
   </footer>
 <!-- Cloudflare Web Analytics: anonymous visit counts, no cookies. Not loaded on share pages (p.html). --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "1879d12eedaf4b739530700ef3285989"}'></script>
 </body>

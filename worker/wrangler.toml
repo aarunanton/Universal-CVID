@@ -1,0 +1,11 @@
+name = "cvid-jobs"
+main = "index.js"
+compatibility_date = "2026-10-01"
+
+# Serve it at https://jobs.cvid.app (add this domain in the Cloudflare dashboard first).
+routes = [{ pattern = "jobs.cvid.app", custom_domain = true }]
+
+# Keys are secrets, never put them in this file:
+#   npx wrangler secret put CAREERJET_KEY
+#   npx wrangler secret put JOOBLE_KEY
+# One key is enough to start. The Worker uses whichever are set.

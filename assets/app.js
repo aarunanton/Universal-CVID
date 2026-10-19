@@ -27,7 +27,7 @@
 
   const onOwnSite = !/claude/.test(location.hostname); // downloads and printing are blocked inside the Claude preview window
   // Two places: the dashboard (everything across your CVs) and a CV workspace (one CV, step by step).
-  const DASH_TABS = [['home', 'Dashboard'], ['tracker', 'Applications'], ['profile', 'Profile']];
+  const DASH_TABS = [['home', 'Dashboard'], ['resumes', 'Resumes'], ['tracker', 'Job tracker'], ['find', 'Find jobs'], ['cover', 'Cover letters'], ['contacts', 'Contacts'], ['interviews', 'Interviews'], ['resources', 'Resources'], ['profile', 'Profile']];
   const CV_TABS = [['edit', 'Content'], ['design', 'Design'], ['match', 'Job match', 'Match'], ['score', 'CV check', 'Check'], ['letter', 'Cover letter', 'Letter'], ['share', 'Export']];
   const ALL_TABS = DASH_TABS.concat(CV_TABS).map(t => t[0]).concat('versions', 'import');
   const isDash = t => !CV_TABS.some(x => x[0] === t);
@@ -121,12 +121,8 @@
       document.body.classList.toggle('is-start', !!store.isNew);
       return;
     }
-    $('#tabs').innerHTML = (dash ? DASH_TABS : CV_TABS).map(([id, label, short], i) => {
-      let badge = '';
-      if (id === 'score') badge = `<span class="badge" id="scoreBadge">${sc.score}</span>`;
-      if (id === 'tracker' && store.applications.length) badge = `<span class="badge">${store.applications.length}</span>`;
-      return `<button class="tab" role="tab" data-tab="${id}" aria-selected="${tab === id || (id === 'home' && tab === 'versions')}" id="tab-${id}"><span class="tab-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${TAB_ICON[id]}</svg></span><span class="tab-tx">${label}</span><span class="tab-sh" aria-hidden="true">${short || label}</span>${badge}</button>`;
-    }).join('');
+    $('#tabs').innerHTML = '';
+    const sd = $('#side'); if (sd) sd.innerHTML = P.side(tab);
     document.body.classList.toggle('is-start', !!store.isNew);
   }
 
@@ -975,6 +971,18 @@
       </section>`}`;
   }
 
+  // ---------- pages (dashboard, find jobs, cover letters, contacts, interviews, resources) ----------
+  function quietPersist() { // saves without touching the open CV's "updated" date
+    const ok = UCV.save(store);
+    if (!ok && !storageWarned) { storageWarned = true; toast('Your browser is blocking storage, so changes last only until you close this tab. Export your CV to keep it.', true); }
+  }
+  const P = UCVPages({
+    esc, uid: UCV.uid, safeUrl: UCV.safeUrl, store: () => store, persist: quietPersist, save: () => UCV.save(store), toast, copy, armed,
+    cv: () => res().cv, res, cvStats, dashNext, ringColor, journey: journeyState, versionCards: () => versionCards(null, true), tab: () => tab,
+    rerender: () => { renderPanel(); renderBar(); },
+    go: t => { tab = t; document.body.classList.remove('show-preview'); syncPreviewBtn(); try { history.replaceState(null, '', '#' + t); } catch (_) {} renderAll(); window.scrollTo(0, 0); }
+  });
+
   function pendingBanner() {
     return pendingImport ? `<div class="banner"><span>Replace your current CV with the imported one? Your ID, versions list and tracker entries stay; CV content is replaced.</span><button class="btn btn-sm" data-action="cancel-import">Cancel</button><button class="btn btn-sm btn-primary" data-action="confirm-import" style="margin-left:0">Replace</button></div>` : '';
   }
@@ -982,9 +990,9 @@
     const panel = $('#panel');
     if (review) { panel.innerHTML = renderReview(); panel.removeAttribute('aria-labelledby'); return; }
     if (store.isNew) { panel.innerHTML = renderStart(); return; }
-    const html = { import: renderImportTab, home: renderHome, profile: renderProfile, edit: renderEdit, design: renderDesign, score: renderScore, match: renderMatch, letter: renderLetterTab, versions: renderVersions, share: renderShare, tracker: renderTracker }[tab]();
+    const html = { import: renderImportTab, home: P.render.home, resumes: P.render.resumes, find: P.render.find, cover: P.render.cover, contacts: P.render.contacts, interviews: P.render.interviews, resources: P.render.resources, profile: renderProfile, edit: renderEdit, design: renderDesign, score: renderScore, match: renderMatch, letter: renderLetterTab, versions: P.render.resumes, share: renderShare, tracker: renderTracker }[tab]();
     panel.innerHTML = pendingBanner() + html + nextBar();
-    panel.setAttribute('aria-labelledby', 'tab-' + (tab === 'versions' ? 'home' : tab));
+    const lab = 'tab-' + tab; if (document.getElementById(lab)) panel.setAttribute('aria-labelledby', lab); else panel.removeAttribute('aria-labelledby');
     if (tab === 'share') renderQR();
     $$('textarea[data-bullet]', panel).forEach(autosize);
   }
@@ -1233,6 +1241,7 @@
     }
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
+    if (btn.dataset.action.indexOf('pg-') === 0) { P.click(btn, btn.dataset.action); return; }
     const v = active(), m = store.master, a = btn.dataset.action;
     if (['print', 'docx', 'pdf', 'copy', 'export-json'].includes(a) && !(store.journey || {}).exported) { (store.journey = store.journey || {}).exported = true; persist(); }
     if (['print', 'docx', 'pdf', 'copy', 'download-main'].includes(a)) setTimeout(offerLog, 700);
@@ -1400,6 +1409,7 @@
     w.querySelector('span').textContent = [active().label, bs.location].filter(Boolean).join(' · ') || 'Title, contact details and photo';
   }
   document.addEventListener('input', e => {
+    if (P.field(e)) return;
     const t = e.target, v = active(), d = t.dataset;
     if (d.rv && review) { setPath(review.cv, d.rv, t.value); return; }
     if (d.m) {
@@ -1422,6 +1432,7 @@
   });
 
   document.addEventListener('change', e => {
+    if (P.field(e)) return;
     const t = e.target, v = active(), d = t.dataset;
     if (t.id === 'versionSelect') { store.active = t.value; persist(); renderAll(); return; }
     if ('skgroup' in d) { // rename a skill group
@@ -1487,6 +1498,7 @@
     if (g.open) $$('textarea[data-bullet]', g).forEach(autosize);
   }, true);
   document.addEventListener('submit', e => {
+    if (P.submit(e)) return;
     if (e.target.id === 'logForm') {
       e.preventDefault();
       const lf = new FormData(e.target);

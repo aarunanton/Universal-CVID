@@ -43,21 +43,21 @@
  ]
 }
 </script>
-<script src="assets/boot.js?v=36"></script>
-<link rel="stylesheet" href="assets/fonts/fonts.css?v=36">
-<link rel="stylesheet" href="assets/styles.css?v=36">
+<script src="assets/boot.js?v=37"></script>
+<link rel="stylesheet" href="assets/fonts/fonts.css?v=37">
+<link rel="stylesheet" href="assets/styles.css?v=37">
+<link rel="stylesheet" href="assets/shell.css?v=37">
 </head>
 <body>
   <div class="h-dark h-dark-nav">
   <nav class="r-nav" aria-label="Main">
     <a class="brand" href="./"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID<span class="beta-tag">Beta</span></a>
     <div class="r-links">
-      <a href="cv-checker.html">CV checker</a>
       <a href="cv-builder.html" class="nav-on" aria-current="page">CV builder</a>
+      <a href="cv-checker.html">CV checker</a>
       <a href="faq.html">FAQ</a>
       <a href="blog/index.html">Blog</a>
     </div>
-    <a class="btn btn-primary r-nav-cta" href="app.html">Build your CV free</a>
   </nav>
   </div>
   <header class="ph ph-shot">
@@ -75,7 +75,7 @@
         <li>Your CV stays in your browser</li>
       </ul>
     </div>
-    <figure class="r-hero-shot"><picture><source media="(max-width: 560px)" srcset="assets/img/builder-m.webp?v=36" width="780" height="1560"><img src="assets/img/hero-builder.webp?v=36" width="2040" height="1350" alt="The builder in Write mode: your sections in print order on the left and the A4 page on the right, with Write, Design and Check at the top."></picture></figure>
+    <figure class="r-hero-shot"><picture><source media="(max-width: 560px)" srcset="assets/img/builder-m.webp?v=37" width="780" height="1560"><img src="assets/img/hero-builder.webp?v=37" width="2040" height="1350" alt="The builder in Write mode: your sections in print order on the left and the A4 page on the right, with Write, Design and Check at the top."></picture></figure>
   </header>
   <section class="section r-section" id="versions">
         <h2>One CV for every job, without the mess.</h2>
@@ -115,11 +115,11 @@
     <h2 class="r-h2">Everything you need to apply.</h2>
     <div class="r-row">
       <div class="r-row-copy"><h3>Tailor it to every job</h3><p>Paste the job advert and see which keywords your CV covers and which are missing. Save the result as a new version; your main CV stays as it is.</p></div>
-      <figure class="r-shot"><img src="assets/img/f-match.webp?v=36" width="1168" height="1500" alt="Job match in Check mode: a pasted job advert, a keyword match score and the missing keywords to add." loading="lazy"></figure>
+      <figure class="r-shot"><img src="assets/img/f-match.webp?v=37" width="1168" height="1500" alt="Job match in Check mode: a pasted job advert, a keyword match score and the missing keywords to add." loading="lazy"></figure>
     </div>
     <div class="r-row wide">
       <div class="r-row-copy"><h3>Track every application</h3><p>Log each job from saved to offer, with the CV version you sent, the date you applied and when to follow up.</p></div>
-      <figure class="r-shot"><img src="assets/img/f-tracker.webp?v=36" width="2360" height="640" alt="The applications board: a column for each stage from saved to offer, with the CV sent and date on every job." loading="lazy"></figure>
+      <figure class="r-shot"><img src="assets/img/f-tracker.webp?v=37" width="2360" height="640" alt="The applications board: a column for each stage from saved to offer, with the CV sent and date on every job." loading="lazy"></figure>
     </div>
     <div class="r-also">
       <h3>Also in the builder</h3>
@@ -135,22 +135,25 @@
       </ul>
     </div>
   </section>
-  <section class="h-dark h-close">
-    <h2>Stop losing track of which CV you sent where.</h2>
-    <p>Free, private, no sign-up.</p>
-    <div class="h-ctas">
-      <a class="btn btn-primary r-btn-lg" href="app.html">Build your CV free</a>
-      <a class="h-btn-ghost" href="cv-checker.html">Check my CV first</a>
+  <section class="site-close" aria-labelledby="closeT">
+    <h2 id="closeT">Build it. Check it. <em>Send it.</em></h2>
+    <p>Free, no sign-up. Your CV stays on your device.</p>
+    <div class="hm-btns">
+      <a class="hm-btn dark" href="app.html">Build my CV free</a>
+      <a class="hm-btn line" href="cv-checker.html">Check my CV free</a>
     </div>
   </section>
-  <footer class="r-foot h-foot">
-    <span>Universal CV ID, open source under the MIT licence</span>
-    <span class="spacer"></span>
-    <a href="about.html">About and roadmap</a>
-    <a href="blog/index.html">Blog</a>
-    <a href="privacy.html">Data and privacy</a>
-    <a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Give feedback</a>
-    <a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a>
+  <footer class="site-foot">
+    <div class="site-foot-in">
+      <div class="sf-brand">
+        <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"></span>Universal CV ID</a>
+        <p>Free tools for job seekers. Your CV is read in your browser and kept on your device.</p>
+      </div>
+      <nav aria-label="Tools"><h2>Tools</h2><a href="cv-builder.html">CV builder</a><a href="cv-checker.html">CV checker</a><a href="cv-checker.html#example">Example report</a><a href="app.html#find">Find jobs</a></nav>
+      <nav aria-label="Learn"><h2>Learn</h2><a href="index.html#how">How it works</a><a href="faq.html">What we check</a><a href="blog/index.html">Blog</a><a href="faq.html">FAQ</a></nav>
+      <nav aria-label="Project"><h2>Project</h2><a href="about.html">About and roadmap</a><a href="privacy.html">Data and privacy</a><a href="https://tally.so/r/1A11el" target="_blank" rel="noopener">Give feedback</a><a href="https://github.com/aarunanton/Universal-CVID" target="_blank" rel="noopener">GitHub</a></nav>
+    </div>
+    <div class="sf-base"><span>Open source under the MIT licence</span><span>Beta · Free for Ireland and the UK</span></div>
   </footer>
 <!-- Cloudflare Web Analytics: anonymous visit counts, no cookies. Not loaded on share pages (p.html). --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "1879d12eedaf4b739530700ef3285989"}'></script>
 </body>

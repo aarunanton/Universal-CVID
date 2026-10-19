@@ -85,3 +85,9 @@ python -m http.server 8000
 ## Licence
 
 MIT © Aarun Antony
+
+## v37
+
+- App shell with left navigation: Dashboard, Resumes, Job tracker, Find jobs, Cover letters, Contacts, Interviews, Resources.
+- Find jobs: live search through a small Cloudflare Worker (`worker/`, see its README to deploy), a paste-an-advert match check, and quick links to job boards. Match scoring runs in the browser.
+- Cream homepage, merged closing band and footer on every public page, privacy page updated for Find jobs.

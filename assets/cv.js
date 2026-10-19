@@ -333,6 +333,12 @@
     mm.skills.forEach(k => { k.group = typeof k.group === 'string' ? k.group : ''; if (k.group && !mm.skillGroups.includes(k.group)) mm.skillGroups.push(k.group); });
     store.applications = arr(store.applications);
     store.applications.forEach(a => { a.url = safeUrl(a.url); });
+    store.applications.forEach(a => { a.jd = String(a.jd || '').slice(0, 20000); });
+    const txt = (v, n) => String(v == null ? '' : v).slice(0, n);
+    store.contacts = arr(store.contacts).filter(c => c && typeof c === 'object').map(c => ({ cid: txt(c.cid, 40) || uid('c'), name: txt(c.name, 80), type: txt(c.type, 40), role: txt(c.role, 80), org: txt(c.org, 80), how: txt(c.how, 120), followUp: txt(c.followUp, 10), lastSpoke: txt(c.lastSpoke, 10), aid: txt(c.aid, 40), notes: txt(c.notes, 4000) }));
+    store.interviews = arr(store.interviews).filter(i => i && typeof i === 'object').map(i => ({ iid: txt(i.iid, 40) || uid('i'), aid: txt(i.aid, 40), role: txt(i.role, 140), company: txt(i.company, 100), when: txt(i.when, 16), kind: txt(i.kind, 20), place: txt(i.place, 120), done: obj(i.done) }));
+    store.coverLetters = arr(store.coverLetters).filter(l => l && typeof l === 'object').map(l => ({ lid: txt(l.lid, 40) || uid('l'), aid: txt(l.aid, 40), role: txt(l.role, 140), company: txt(l.company, 100), to: txt(l.to, 100) || 'Hiring team', opening: txt(l.opening, 3000), ev: arr(l.ev).map(x => txt(x, 400)), closing: txt(l.closing, 3000), auto: l.auto !== false }));
+    store.answers = obj(store.answers);
     store.share = Object.assign({ email: true, phone: false, location: true }, obj(store.share)); // which contact details go into shared links
     if (!validId(store.id)) store.id = newId();
     return store;
